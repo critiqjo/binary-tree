@@ -60,16 +60,15 @@ pub enum WalkAction {
     Stop,
 }
 
-pub fn walk_mut<T, V, ST, FF, FB>(root: &mut T, mut ff: FF, mut fb: FB)
-    where T: BinaryTree<Value=V, Subtree=ST>,
-          FF: FnMut(&mut T) -> WalkAction,
-          FB: FnMut(&mut T, WalkAction),
-          ST: Sized + DerefMut<Target=T>,
+// Walks down the tree by detaching subtrees, then reattaches them back.
+pub fn walk_mut<T, F>(root: &mut T, mut f: F)
+    where T: BinaryTree,
+          F: FnMut(&mut T) -> WalkAction
 {
     use WalkAction::*;
 
     let mut stack = Vec::with_capacity(8);
-    let root_action = ff(root);
+    let root_action = f(root);
     let mut subtree = match root_action {
         Left => root.detach_left(),
         Right => root.detach_right(),
@@ -78,7 +77,7 @@ pub fn walk_mut<T, V, ST, FF, FB>(root: &mut T, mut ff: FF, mut fb: FB)
     let mut action = root_action;
     while action != Stop {
         if let Some(mut st) = subtree {
-            action = ff(&mut st);
+            action = f(&mut st);
             subtree = match action {
                 Left => st.detach_left(),
                 Right => st.detach_right(),
@@ -89,15 +88,13 @@ pub fn walk_mut<T, V, ST, FF, FB>(root: &mut T, mut ff: FF, mut fb: FB)
             break;
         }
     }
-    if let Some((mut sst, action)) = stack.pop() {
-        fb(&mut sst, action); // the final action is irrelevant
+    if let Some((mut sst, _)) = stack.pop() {
         while let Some((mut st, action)) = stack.pop() {
             match action {
                 Left => st.insert_left(Some(sst)),
                 Right => st.insert_right(Some(sst)),
                 Stop => unreachable!(),
             };
-            fb(&mut st, action);
             sst = st;
         }
         match root_action {
@@ -106,7 +103,6 @@ pub fn walk_mut<T, V, ST, FF, FB>(root: &mut T, mut ff: FF, mut fb: FB)
             Stop => unreachable!(),
         };
     }
-    fb(root, root_action);
 }
 
 #[cfg(test)]
@@ -188,16 +184,19 @@ mod tests {
         tt_r.insert_left(Some(box TestTree::new(25)));
         tt.insert_right(Some(box tt_r));
 
-        let mut steps = vec![Right, Left];
-        let mut step_iter = steps.drain(..);
-        super::walk_mut(&mut tt, |_| {
-            step_iter.next().unwrap_or(Stop)
-        }, |st, action| {
-            match action {
-                Right => assert_eq!(st.val, 20),
-                Left => assert_eq!(st.val, 30),
-                Stop => assert_eq!(st.val, 25),
-            }
-        })
+        let mut steps = vec![Right, Left, Stop];
+        {
+            let mut step_iter = steps.drain(..);
+            super::walk_mut(&mut tt, |st| {
+                let action = step_iter.next().unwrap();
+                match action {
+                    Right => assert_eq!(st.val, 20),
+                    Left => assert_eq!(st.val, 30),
+                    Stop => assert_eq!(st.val, 25),
+                }
+                action
+            });
+        }
+        assert_eq!(steps.len(), 0);
     }
 }

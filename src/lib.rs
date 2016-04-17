@@ -55,6 +55,7 @@ pub trait BinaryTree: Sized {
 #[cfg(test)]
 mod tests {
     use super::BinaryTree;
+    use std::mem;
 
     #[derive(Debug)]
     struct TestTree {
@@ -83,15 +84,13 @@ mod tests {
         fn detach_right(&mut self) -> Option<Self::Subtree> {
             self.right.take()
         }
-        fn insert_left(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree> {
-            let old = self.left.take();
-            self.left = tree;
-            old
+        fn insert_left(&mut self, mut st: Option<Self::Subtree>) -> Option<Self::Subtree> {
+            mem::swap(&mut self.left, &mut st);
+            st
         }
-        fn insert_right(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree> {
-            let old = self.right.take();
-            self.right = tree;
-            old
+        fn insert_right(&mut self, mut st: Option<Self::Subtree>) -> Option<Self::Subtree> {
+            mem::swap(&mut self.right, &mut st);
+            st
         }
         fn value(&self) -> &u32 {
             &self.val

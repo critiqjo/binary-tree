@@ -53,6 +53,62 @@ pub trait BinaryTree: Sized {
     }
 }
 
+#[derive(Clone, Copy, PartialEq)]
+pub enum WalkAction {
+    Left,
+    Right,
+    Stop,
+}
+
+pub fn walk_mut<T, V, ST, FF, FB>(root: &mut T, mut ff: FF, mut fb: FB)
+    where T: BinaryTree<Value=V, Subtree=ST>,
+          FF: FnMut(&mut T) -> WalkAction,
+          FB: FnMut(&mut T, WalkAction),
+          ST: Sized + DerefMut<Target=T>,
+{
+    use WalkAction::*;
+
+    let mut stack = Vec::with_capacity(8);
+    let root_action = ff(root);
+    let mut subtree = match root_action {
+        Left => root.detach_left(),
+        Right => root.detach_right(),
+        Stop => None,
+    };
+    let mut action = root_action;
+    while action != Stop {
+        if let Some(mut st) = subtree {
+            action = ff(&mut st);
+            subtree = match action {
+                Left => st.detach_left(),
+                Right => st.detach_right(),
+                Stop => None,
+            };
+            stack.push((st, action));
+        } else {
+            break;
+        }
+    }
+    if let Some((mut sst, action)) = stack.pop() {
+        fb(&mut sst, action); // the final action is irrelevant
+        while let Some((mut st, action)) = stack.pop() {
+            match action {
+                Left => st.insert_left(Some(sst)),
+                Right => st.insert_right(Some(sst)),
+                Stop => unreachable!(),
+            };
+            fb(&mut st, action);
+            sst = st;
+        }
+        match root_action {
+            Left => root.insert_left(Some(sst)),
+            Right => root.insert_right(Some(sst)),
+            Stop => unreachable!(),
+        };
+    }
+    fb(root, root_action);
+}
+
 #[cfg(test)]
 mod tests {
     use super::BinaryTree;
@@ -120,5 +176,28 @@ mod tests {
         assert_eq!(tt.right.as_ref().unwrap().val, 30);
         assert_eq!(tt.right.as_ref().unwrap()
                      .left.as_ref().unwrap().val,  25);
+    }
+
+    #[test]
+    fn walk() {
+        use WalkAction::*;
+
+        let mut tt = TestTree::new(20);
+        tt.insert_left(Some(box TestTree::new(10)));
+        let mut tt_r = TestTree::new(30);
+        tt_r.insert_left(Some(box TestTree::new(25)));
+        tt.insert_right(Some(box tt_r));
+
+        let mut steps = vec![Right, Left];
+        let mut step_iter = steps.drain(..);
+        super::walk_mut(&mut tt, |_| {
+            step_iter.next().unwrap_or(Stop)
+        }, |st, action| {
+            match action {
+                Right => assert_eq!(st.val, 20),
+                Left => assert_eq!(st.val, 30),
+                Stop => assert_eq!(st.val, 25),
+            }
+        })
     }
 }

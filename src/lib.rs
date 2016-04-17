@@ -7,8 +7,6 @@
 //!   Height of a leaf node is defined to be zero.
 //! * In this crate, a tree and a node is handled uniformly.
 
-#![feature(box_syntax)]
-
 use std::mem;
 use std::ops::DerefMut;
 

@@ -63,10 +63,10 @@ mod tests {
     #[test]
     fn rotate() {
         let mut tt = PlainTree::new(20);
-        tt.insert_left(Some(box PlainTree::new(10)));
+        tt.insert_left(Some(Box::new(PlainTree::new(10))));
         let mut tt_r = PlainTree::new(30);
-        tt_r.insert_left(Some(box PlainTree::new(25)));
-        tt.insert_right(Some(box tt_r));
+        tt_r.insert_left(Some(Box::new(PlainTree::new(25))));
+        tt.insert_right(Some(Box::new(tt_r)));
 
         tt.rotate_left().unwrap();
         assert_eq!(*tt.value(),                    30);
@@ -89,10 +89,10 @@ mod tests {
         use WalkAction::*;
 
         let mut tt = PlainTree::new(20);
-        tt.insert_left(Some(box PlainTree::new(10)));
+        tt.insert_left(Some(Box::new(PlainTree::new(10))));
         let mut tt_r = PlainTree::new(30);
-        tt_r.insert_left(Some(box PlainTree::new(25)));
-        tt.insert_right(Some(box tt_r));
+        tt_r.insert_left(Some(Box::new(PlainTree::new(25))));
+        tt.insert_right(Some(Box::new(tt_r)));
 
         let mut steps = vec![Right, Left, Stop];
         {

@@ -96,9 +96,9 @@ mod tests {
     fn counting() {
         let mut ct = CountTree::new(7);
         let mut ct_l = CountTree::new(8);
-        ct_l.insert_right(Some(box CountTree::new(12)));
-        ct.insert_left(Some(box ct_l));
-        ct.insert_right(Some(box CountTree::new(5)));
+        ct_l.insert_right(Some(Box::new(CountTree::new(12))));
+        ct.insert_left(Some(Box::new(ct_l)));
+        ct.insert_right(Some(Box::new(CountTree::new(5))));
         assert_eq!(ct.left_sum, 20);
         assert_eq!(ct.right_sum, 5);
         assert_eq!(ct.total_count(), 32);

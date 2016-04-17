@@ -58,9 +58,9 @@ mod tests {
     fn iteration() {
         let mut ct = CountTree::new(7);
         let mut ct_l = CountTree::new(8);
-        ct_l.insert_right(Some(box CountTree::new(12)));
-        ct.insert_left(Some(box ct_l));
-        ct.insert_right(Some(box CountTree::new(5)));
+        ct_l.insert_right(Some(Box::new(CountTree::new(12))));
+        ct.insert_left(Some(Box::new(ct_l)));
+        ct.insert_right(Some(Box::new(CountTree::new(5))));
 
         let vals: Vec<_> = (&ct).into_iter().map(|v| *v).collect();
         assert_eq!(vals, [8, 12, 7, 5]);

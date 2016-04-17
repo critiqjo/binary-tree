@@ -1,0 +1,11 @@
+[package]
+name = "binary-tree"
+version = "0.0.1"
+authors = ["critiqjo <john.ch.fr@gmail.com>"]
+description = "Collection of Binary Tree data structures and algorithms"
+
+repository = "https://github.com/critiqjo/binary-tree"
+keywords = ["binary", "tree"]
+license = "MIT/Apache-2.0"
+
+[dependencies]

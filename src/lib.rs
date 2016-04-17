@@ -3,10 +3,12 @@
 use std::ops::DerefMut;
 
 pub mod cow;
+pub mod count;
 
 /// Generic methods on binary trees. Calling any of these methods directly on a
-/// self-balancing binary tree can make it imbalanced.
+/// self-balancing binary tree may make it imbalanced.
 pub trait BinaryTree: Sized {
+    type Value;
     type Subtree: Sized + DerefMut<Target=Self>;
 
     /// Try to detach the left sub-tree
@@ -20,6 +22,8 @@ pub trait BinaryTree: Sized {
 
     /// Replace the right subtree with `tree` and return the old one.
     fn insert_right(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree>;
+
+    fn value(&self) -> &Self::Value;
 
     /// Consumes the tree, rotates it left if right subtree exists, otherwise
     /// returns the original with an error.
@@ -70,6 +74,7 @@ mod tests {
     }
 
     impl BinaryTree for TestTree {
+        type Value = u32;
         type Subtree = Box<TestTree>;
 
         fn detach_left(&mut self) -> Option<Self::Subtree> {
@@ -88,6 +93,9 @@ mod tests {
             self.right = tree;
             old
         }
+        fn value(&self) -> &u32 {
+            &self.val
+        }
     }
 
     #[test]
@@ -99,7 +107,7 @@ mod tests {
         tt.insert_right(Some(box tt_r));
 
         let tt_lrot: Box<TestTree> = TestTree::rotate_left(box tt).unwrap();
-        assert_eq!(tt_lrot.val,                         30);
+        assert_eq!(*tt_lrot.value(),                    30);
         assert_eq!(tt_lrot.left.as_ref().unwrap().val,  20);
         assert_eq!(tt_lrot.left.as_ref().unwrap()
                           .left.as_ref().unwrap().val,  10);
@@ -107,7 +115,7 @@ mod tests {
                           .right.as_ref().unwrap().val, 25);
 
         let tt: Box<TestTree> = TestTree::rotate_right(tt_lrot).unwrap();
-        assert_eq!(tt.val,                         20);
+        assert_eq!(*tt.value(),                    20);
         assert_eq!(tt.left.as_ref().unwrap().val,  10);
         assert_eq!(tt.right.as_ref().unwrap().val, 30);
         assert_eq!(tt.right.as_ref().unwrap()

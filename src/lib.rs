@@ -1,5 +1,6 @@
 #![feature(box_syntax)]
 
+use std::mem;
 use std::ops::DerefMut;
 
 pub mod cow;
@@ -25,29 +26,29 @@ pub trait BinaryTree: Sized {
 
     fn value(&self) -> &Self::Value;
 
-    /// Consumes the tree, rotates it left if right subtree exists, otherwise
-    /// returns the original with an error.
-    fn rotate_left(mut this: Self::Subtree) -> Result<Self::Subtree, Self::Subtree> {
-        if let Some(mut new_root) = this.detach_right() {
-            let mid = new_root.detach_left();
-            this.insert_right(mid);
-            new_root.insert_left(Some(this));
-            Ok(new_root)
+    /// Try to rotate the tree left if right subtree exists
+    fn rotate_left(&mut self) -> Result<(), ()> {
+        if let Some(mut self2) = self.detach_right() {
+            let mid = self2.detach_left();
+            self.insert_right(mid);
+            mem::swap(self, &mut self2);
+            self.insert_left(Some(self2));
+            Ok(())
         } else {
-            Err(this)
+            Err(())
         }
     }
 
-    /// Consumes the tree, rotates it right if left subtree exists, otherwise
-    /// returns the original with an error.
-    fn rotate_right(mut this: Self::Subtree) -> Result<Self::Subtree, Self::Subtree> {
-        if let Some(mut new_root) = this.detach_left() {
-            let mid = new_root.detach_right();
-            this.insert_left(mid);
-            new_root.insert_right(Some(this));
-            Ok(new_root)
+    /// Try to rotate the tree right if left subtree exists
+    fn rotate_right(&mut self) -> Result<(), ()> {
+        if let Some(mut self2) = self.detach_left() {
+            let mid = self2.detach_right();
+            self.insert_left(mid);
+            mem::swap(self, &mut self2);
+            self.insert_right(Some(self2));
+            Ok(())
         } else {
-            Err(this)
+            Err(())
         }
     }
 }
@@ -105,15 +106,15 @@ mod tests {
         tt_r.insert_left(Some(box TestTree::new(25)));
         tt.insert_right(Some(box tt_r));
 
-        let tt_lrot: Box<TestTree> = TestTree::rotate_left(box tt).unwrap();
-        assert_eq!(*tt_lrot.value(),                    30);
-        assert_eq!(tt_lrot.left.as_ref().unwrap().val,  20);
-        assert_eq!(tt_lrot.left.as_ref().unwrap()
-                          .left.as_ref().unwrap().val,  10);
-        assert_eq!(tt_lrot.left.as_ref().unwrap()
-                          .right.as_ref().unwrap().val, 25);
+        tt.rotate_left().unwrap();
+        assert_eq!(*tt.value(),                    30);
+        assert_eq!(tt.left.as_ref().unwrap().val,  20);
+        assert_eq!(tt.left.as_ref().unwrap()
+                     .left.as_ref().unwrap().val,  10);
+        assert_eq!(tt.left.as_ref().unwrap()
+                     .right.as_ref().unwrap().val, 25);
 
-        let tt: Box<TestTree> = TestTree::rotate_right(tt_lrot).unwrap();
+        tt.rotate_right().unwrap();
         assert_eq!(*tt.value(),                    20);
         assert_eq!(tt.left.as_ref().unwrap().val,  10);
         assert_eq!(tt.right.as_ref().unwrap().val, 30);

@@ -1,6 +1,7 @@
 use std::mem;
 
 use BinaryTree;
+use RawNode;
 use iter::Iter;
 
 pub trait Countable {
@@ -39,15 +40,22 @@ impl<T: Countable> CountTree<T> {
 
 impl<T: Countable> BinaryTree for CountTree<T> {
     type Value = T;
+
+    fn left(&self) -> Option<&Self> {
+        self.left.as_ref().map(|st| &**st)
+    }
+
+    fn right(&self) -> Option<&Self> {
+        self.right.as_ref().map(|st| &**st)
+    }
+
+    fn value(&self) -> &T {
+        &self.val
+    }
+}
+
+impl<T: Countable> RawNode for CountTree<T> {
     type Subtree = Box<CountTree<T>>;
-
-    fn left(&self) -> Option<&Self::Subtree> {
-        self.left.as_ref()
-    }
-
-    fn right(&self) -> Option<&Self::Subtree> {
-        self.right.as_ref()
-    }
 
     fn detach_left(&mut self) -> Option<Self::Subtree> {
         self.left_sum = 0;
@@ -70,10 +78,6 @@ impl<T: Countable> BinaryTree for CountTree<T> {
         mem::swap(&mut self.right, &mut tree);
         tree
     }
-
-    fn value(&self) -> &T {
-        &self.val
-    }
 }
 
 impl<'a, T> IntoIterator for &'a CountTree<T>
@@ -89,7 +93,7 @@ impl<'a, T> IntoIterator for &'a CountTree<T>
 
 #[cfg(test)]
 mod tests {
-    use BinaryTree;
+    use RawNode;
     use super::CountTree;
 
     #[test]

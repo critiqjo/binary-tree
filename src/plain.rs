@@ -1,6 +1,7 @@
 use std::mem;
 
 use BinaryTree;
+use RawNode;
 
 #[derive(Debug)]
 pub struct PlainTree<T> {
@@ -21,15 +22,22 @@ impl<T> PlainTree<T> {
 
 impl<T> BinaryTree for PlainTree<T> {
     type Value = T;
+
+    fn left(&self) -> Option<&Self> {
+        self.left.as_ref().map(|st| &**st)
+    }
+
+    fn right(&self) -> Option<&Self> {
+        self.right.as_ref().map(|st| &**st)
+    }
+
+    fn value(&self) -> &T {
+        &self.val
+    }
+}
+
+impl<T> RawNode for PlainTree<T> {
     type Subtree = Box<PlainTree<T>>;
-
-    fn left(&self) -> Option<&Self::Subtree> {
-        self.left.as_ref()
-    }
-
-    fn right(&self) -> Option<&Self::Subtree> {
-        self.right.as_ref()
-    }
 
     fn detach_left(&mut self) -> Option<Self::Subtree> {
         self.left.take()
@@ -48,16 +56,13 @@ impl<T> BinaryTree for PlainTree<T> {
         mem::swap(&mut self.right, &mut st);
         st
     }
-
-    fn value(&self) -> &T {
-        &self.val
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::PlainTree;
     use BinaryTree;
+    use RawNode;
     use walk_mut;
 
     #[test]

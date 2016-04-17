@@ -51,7 +51,7 @@ impl<'a, T> Iterator for Iter<'a, T>
 
 #[cfg(test)]
 mod tests {
-    use BinaryTree;
+    use RawNode;
     use count::CountTree;
 
     #[test]

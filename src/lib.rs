@@ -15,17 +15,23 @@ pub mod count;
 pub mod iter;
 pub mod plain;
 
-/// Generic methods on binary trees. Calling any of these methods directly on a
-/// self-balancing binary tree may make it imbalanced.
-pub trait BinaryTree: Sized {
+/// Generic methods for traversing a binary tree.
+pub trait BinaryTree {
     type Value;
-    type Subtree: Sized + DerefMut<Target=Self>;
 
     /// Get a reference to the left subtree
-    fn left(&self) -> Option<&Self::Subtree>;
+    fn left(&self) -> Option<&Self>;
 
     /// Get a reference to the right subtree
-    fn right(&self) -> Option<&Self::Subtree>;
+    fn right(&self) -> Option<&Self>;
+
+    /// Returns the value of the current node.
+    fn value(&self) -> &Self::Value;
+}
+
+/// Mutating methods on a Binary Tree node.
+pub trait RawNode: Sized {
+    type Subtree: Sized + DerefMut<Target=Self>;
 
     /// Try to detach the left sub-tree
     fn detach_left(&mut self) -> Option<Self::Subtree>;
@@ -38,9 +44,6 @@ pub trait BinaryTree: Sized {
 
     /// Replace the right subtree with `tree` and return the old one.
     fn insert_right(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree>;
-
-    /// Returns the value of the current node.
-    fn value(&self) -> &Self::Value;
 
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {
@@ -78,7 +81,7 @@ pub enum WalkAction {
 
 /// Walks down the tree by detaching subtrees, then reattaches them back.
 pub fn walk_mut<T, F>(root: &mut T, mut f: F)
-    where T: BinaryTree,
+    where T: RawNode,
           F: FnMut(&mut T) -> WalkAction
 {
     use WalkAction::*;

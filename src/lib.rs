@@ -12,6 +12,12 @@ pub trait BinaryTree: Sized {
     type Value;
     type Subtree: Sized + DerefMut<Target=Self>;
 
+    /// Get a reference to the left subtree
+    fn left(&self) -> Option<&Self::Subtree>;
+
+    /// Get a reference to the right subtree
+    fn right(&self) -> Option<&Self::Subtree>;
+
     /// Try to detach the left sub-tree
     fn detach_left(&mut self) -> Option<Self::Subtree>;
 
@@ -24,6 +30,7 @@ pub trait BinaryTree: Sized {
     /// Replace the right subtree with `tree` and return the old one.
     fn insert_right(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree>;
 
+    /// Returns the value of the current node.
     fn value(&self) -> &Self::Value;
 
     /// Try to rotate the tree left if right subtree exists
@@ -130,6 +137,14 @@ mod tests {
     impl BinaryTree for TestTree {
         type Value = u32;
         type Subtree = Box<TestTree>;
+
+        fn left(&self) -> Option<&Self::Subtree> {
+            self.left.as_ref()
+        }
+
+        fn right(&self) -> Option<&Self::Subtree> {
+            self.right.as_ref()
+        }
 
         fn detach_left(&mut self) -> Option<Self::Subtree> {
             self.left.take()

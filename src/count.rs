@@ -1,9 +1,14 @@
 use std::mem;
+
 use BinaryTree;
 
 pub trait Countable {
+    fn count(&self) -> u64;
+}
+
+impl Countable for u64 {
     fn count(&self) -> u64 {
-        1
+        *self
     }
 }
 
@@ -34,6 +39,14 @@ impl<T: Countable> CountTree<T> {
 impl<T: Countable> BinaryTree for CountTree<T> {
     type Value = T;
     type Subtree = Box<CountTree<T>>;
+
+    fn left(&self) -> Option<&Self::Subtree> {
+        self.left.as_ref()
+    }
+
+    fn right(&self) -> Option<&Self::Subtree> {
+        self.right.as_ref()
+    }
 
     fn detach_left(&mut self) -> Option<Self::Subtree> {
         self.left_sum = 0;
@@ -66,22 +79,14 @@ impl<T: Countable> BinaryTree for CountTree<T> {
 mod tests {
     use BinaryTree;
     use super::CountTree;
-    use super::Countable;
-
-    struct Value(u8);
-    impl Countable for Value {
-        fn count(&self) -> u64 {
-            self.0 as u64
-        }
-    }
 
     #[test]
     fn counting() {
-        let mut ct = CountTree::new(Value(7));
-        let mut tt_l = CountTree::new(Value(8));
-        tt_l.insert_right(Some(box CountTree::new(Value(12))));
-        ct.insert_left(Some(box tt_l));
-        ct.insert_right(Some(box CountTree::new(Value(5))));
+        let mut ct = CountTree::new(7);
+        let mut ct_l = CountTree::new(8);
+        ct_l.insert_right(Some(box CountTree::new(12)));
+        ct.insert_left(Some(box ct_l));
+        ct.insert_right(Some(box CountTree::new(5)));
         assert_eq!(ct.left_sum, 20);
         assert_eq!(ct.right_sum, 5);
         assert_eq!(ct.total_count(), 32);

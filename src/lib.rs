@@ -5,7 +5,6 @@
 //! * The root of a tree is considered to be at the _top_.
 //! * _Height_ of a node is the length of the longest path to _its_ leaves.
 //!   Height of a leaf node is defined to be zero.
-//! * In this crate, a tree and a node is handled uniformly.
 
 use std::mem;
 use std::ops::DerefMut;
@@ -15,8 +14,14 @@ pub mod count;
 pub mod iter;
 pub mod plain;
 
-/// Generic methods for traversing a binary tree.
 pub trait BinaryTree {
+    type Node: Node;
+
+    fn root(&self) -> &Self::Node;
+}
+
+/// Generic methods for traversing a binary tree.
+pub trait Node {
     type Value;
 
     /// Get a reference to the left subtree
@@ -30,20 +35,20 @@ pub trait BinaryTree {
 }
 
 /// Mutating methods on a Binary Tree node.
-pub trait RawNode: Sized {
-    type Subtree: Sized + DerefMut<Target=Self>;
+pub trait NodeMut: Node + Sized {
+    type NodePtr: Sized + DerefMut<Target=Self>;
 
     /// Try to detach the left sub-tree
-    fn detach_left(&mut self) -> Option<Self::Subtree>;
+    fn detach_left(&mut self) -> Option<Self::NodePtr>;
 
     /// Try to detach the right sub-tree
-    fn detach_right(&mut self) -> Option<Self::Subtree>;
+    fn detach_right(&mut self) -> Option<Self::NodePtr>;
 
     /// Replace the left subtree with `tree` and return the old one.
-    fn insert_left(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree>;
+    fn insert_left(&mut self, tree: Option<Self::NodePtr>) -> Option<Self::NodePtr>;
 
     /// Replace the right subtree with `tree` and return the old one.
-    fn insert_right(&mut self, tree: Option<Self::Subtree>) -> Option<Self::Subtree>;
+    fn insert_right(&mut self, tree: Option<Self::NodePtr>) -> Option<Self::NodePtr>;
 
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {
@@ -81,7 +86,7 @@ pub enum WalkAction {
 
 /// Walks down the tree by detaching subtrees, then reattaches them back.
 pub fn walk_mut<T, F>(root: &mut T, mut f: F)
-    where T: RawNode,
+    where T: NodeMut,
           F: FnMut(&mut T) -> WalkAction
 {
     use WalkAction::*;

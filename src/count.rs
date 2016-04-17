@@ -1,8 +1,9 @@
 use std::mem;
 
+use Node;
+use NodeMut;
 use BinaryTree;
-use RawNode;
-use iter::Iter;
+use iter::NodeIter;
 
 pub trait Countable {
     fn count(&self) -> u64;
@@ -14,17 +15,44 @@ impl Countable for u64 {
     }
 }
 
-pub struct CountTree<T> {
+pub struct CountTree<T>(CountNode<T>);
+
+impl<T: Countable> CountTree<T> {
+    pub fn new(val: T) -> CountTree<T> {
+        CountTree(CountNode::new(val))
+    }
+}
+
+impl<T: Countable> BinaryTree for CountTree<T> {
+    type Node = CountNode<T>;
+
+    fn root(&self) -> &Self::Node {
+        &self.0
+    }
+}
+
+impl<'a, T> IntoIterator for &'a CountTree<T>
+    where T: Countable
+{
+    type Item = &'a T;
+    type IntoIter = NodeIter<'a, CountNode<T>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        NodeIter::new(&self.0)
+    }
+}
+
+pub struct CountNode<T> {
     val: T,
-    left: Option<Box<CountTree<T>>>,
-    right: Option<Box<CountTree<T>>>,
+    left: Option<Box<CountNode<T>>>,
+    right: Option<Box<CountNode<T>>>,
     left_sum: u64, // excluding val.count()
     right_sum: u64, // ditto
 }
 
-impl<T: Countable> CountTree<T> {
-    pub fn new(val: T) -> CountTree<T> {
-        CountTree {
+impl<T: Countable> CountNode<T> {
+    pub fn new(val: T) -> CountNode<T> {
+        CountNode {
             val: val,
             left: None,
             right: None,
@@ -38,7 +66,7 @@ impl<T: Countable> CountTree<T> {
     }
 }
 
-impl<T: Countable> BinaryTree for CountTree<T> {
+impl<T: Countable> Node for CountNode<T> {
     type Value = T;
 
     fn left(&self) -> Option<&Self> {
@@ -54,55 +82,44 @@ impl<T: Countable> BinaryTree for CountTree<T> {
     }
 }
 
-impl<T: Countable> RawNode for CountTree<T> {
-    type Subtree = Box<CountTree<T>>;
+impl<T: Countable> NodeMut for CountNode<T> {
+    type NodePtr = Box<CountNode<T>>;
 
-    fn detach_left(&mut self) -> Option<Self::Subtree> {
+    fn detach_left(&mut self) -> Option<Self::NodePtr> {
         self.left_sum = 0;
         self.left.take()
     }
 
-    fn detach_right(&mut self) -> Option<Self::Subtree> {
+    fn detach_right(&mut self) -> Option<Self::NodePtr> {
         self.right_sum = 0;
         self.right.take()
     }
 
-    fn insert_left(&mut self, mut tree: Option<Self::Subtree>) -> Option<Self::Subtree> {
+    fn insert_left(&mut self, mut tree: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         self.left_sum = tree.as_ref().map_or(0, |tree| tree.total_count());
         mem::swap(&mut self.left, &mut tree);
         tree
     }
 
-    fn insert_right(&mut self, mut tree: Option<Self::Subtree>) -> Option<Self::Subtree> {
+    fn insert_right(&mut self, mut tree: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         self.right_sum = tree.as_ref().map_or(0, |tree| tree.total_count());
         mem::swap(&mut self.right, &mut tree);
         tree
     }
 }
 
-impl<'a, T> IntoIterator for &'a CountTree<T>
-    where T: Countable
-{
-    type Item = &'a T;
-    type IntoIter = Iter<'a, CountTree<T>>;
-
-    fn into_iter(self) -> Self::IntoIter {
-        Iter::new(self)
-    }
-}
-
 #[cfg(test)]
 mod tests {
-    use RawNode;
-    use super::CountTree;
+    use NodeMut;
+    use super::CountNode;
 
     #[test]
     fn counting() {
-        let mut ct = CountTree::new(7);
-        let mut ct_l = CountTree::new(8);
-        ct_l.insert_right(Some(Box::new(CountTree::new(12))));
+        let mut ct = CountNode::new(7);
+        let mut ct_l = CountNode::new(8);
+        ct_l.insert_right(Some(Box::new(CountNode::new(12))));
         ct.insert_left(Some(Box::new(ct_l)));
-        ct.insert_right(Some(Box::new(CountTree::new(5))));
+        ct.insert_right(Some(Box::new(CountNode::new(5))));
         assert_eq!(ct.left_sum, 20);
         assert_eq!(ct.right_sum, 5);
         assert_eq!(ct.total_count(), 32);

@@ -1,4 +1,4 @@
-use BinaryTree;
+use Node;
 
 #[derive(PartialEq)]
 enum IterAction {
@@ -6,24 +6,24 @@ enum IterAction {
     Right,
 }
 
-pub struct Iter<'a, T>
-    where T: BinaryTree + 'a
+pub struct NodeIter<'a, T>
+    where T: Node + 'a
 {
     stack: Vec<(&'a T, IterAction)>,
 }
 
-impl<'a, T> Iter<'a, T>
-    where T: BinaryTree + 'a
+impl<'a, T> NodeIter<'a, T>
+    where T: Node + 'a
 {
-    pub fn new(tree: &'a T) -> Iter<'a, T> {
-        Iter {
+    pub fn new(tree: &'a T) -> NodeIter<'a, T> {
+        NodeIter {
             stack: vec![(tree, IterAction::Left)],
         }
     }
 }
 
-impl<'a, T> Iterator for Iter<'a, T>
-    where T: BinaryTree + 'a
+impl<'a, T> Iterator for NodeIter<'a, T>
+    where T: Node + 'a
 {
     type Item = &'a T::Value;
 
@@ -51,18 +51,19 @@ impl<'a, T> Iterator for Iter<'a, T>
 
 #[cfg(test)]
 mod tests {
-    use RawNode;
-    use count::CountTree;
+    use NodeMut;
+    use count::CountNode;
+    use super::NodeIter;
 
     #[test]
     fn iteration() {
-        let mut ct = CountTree::new(7);
-        let mut ct_l = CountTree::new(8);
-        ct_l.insert_right(Some(Box::new(CountTree::new(12))));
+        let mut ct = CountNode::new(7);
+        let mut ct_l = CountNode::new(8);
+        ct_l.insert_right(Some(Box::new(CountNode::new(12))));
         ct.insert_left(Some(Box::new(ct_l)));
-        ct.insert_right(Some(Box::new(CountTree::new(5))));
+        ct.insert_right(Some(Box::new(CountNode::new(5))));
 
-        let vals: Vec<_> = (&ct).into_iter().map(|v| *v).collect();
+        let vals: Vec<_> = NodeIter::new(&ct).map(|v| *v).collect();
         assert_eq!(vals, [8, 12, 7, 5]);
     }
 }

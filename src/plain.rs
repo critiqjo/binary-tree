@@ -1,7 +1,7 @@
 use std::mem;
 
-use BinaryTree;
-use RawNode;
+use Node;
+use NodeMut;
 
 #[derive(Debug)]
 pub struct PlainTree<T> {
@@ -20,7 +20,7 @@ impl<T> PlainTree<T> {
     }
 }
 
-impl<T> BinaryTree for PlainTree<T> {
+impl<T> Node for PlainTree<T> {
     type Value = T;
 
     fn left(&self) -> Option<&Self> {
@@ -36,23 +36,23 @@ impl<T> BinaryTree for PlainTree<T> {
     }
 }
 
-impl<T> RawNode for PlainTree<T> {
-    type Subtree = Box<PlainTree<T>>;
+impl<T> NodeMut for PlainTree<T> {
+    type NodePtr = Box<PlainTree<T>>;
 
-    fn detach_left(&mut self) -> Option<Self::Subtree> {
+    fn detach_left(&mut self) -> Option<Self::NodePtr> {
         self.left.take()
     }
 
-    fn detach_right(&mut self) -> Option<Self::Subtree> {
+    fn detach_right(&mut self) -> Option<Self::NodePtr> {
         self.right.take()
     }
 
-    fn insert_left(&mut self, mut st: Option<Self::Subtree>) -> Option<Self::Subtree> {
+    fn insert_left(&mut self, mut st: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         mem::swap(&mut self.left, &mut st);
         st
     }
 
-    fn insert_right(&mut self, mut st: Option<Self::Subtree>) -> Option<Self::Subtree> {
+    fn insert_right(&mut self, mut st: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         mem::swap(&mut self.right, &mut st);
         st
     }
@@ -61,8 +61,8 @@ impl<T> RawNode for PlainTree<T> {
 #[cfg(test)]
 mod tests {
     use super::PlainTree;
-    use BinaryTree;
-    use RawNode;
+    use Node;
+    use NodeMut;
     use walk_mut;
 
     #[test]

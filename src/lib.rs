@@ -5,6 +5,7 @@ use std::ops::DerefMut;
 
 pub mod cow;
 pub mod count;
+pub mod iter;
 
 /// Generic methods on binary trees. Calling any of these methods directly on a
 /// self-balancing binary tree may make it imbalanced.
@@ -67,7 +68,7 @@ pub enum WalkAction {
     Stop,
 }
 
-// Walks down the tree by detaching subtrees, then reattaches them back.
+/// Walks down the tree by detaching subtrees, then reattaches them back.
 pub fn walk_mut<T, F>(root: &mut T, mut f: F)
     where T: BinaryTree,
           F: FnMut(&mut T) -> WalkAction

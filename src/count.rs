@@ -1,6 +1,7 @@
 use std::mem;
 
 use BinaryTree;
+use iter::Iter;
 
 pub trait Countable {
     fn count(&self) -> u64;
@@ -72,6 +73,17 @@ impl<T: Countable> BinaryTree for CountTree<T> {
 
     fn value(&self) -> &T {
         &self.val
+    }
+}
+
+impl<'a, T> IntoIterator for &'a CountTree<T>
+    where T: Countable
+{
+    type Item = &'a T;
+    type IntoIter = Iter<'a, CountTree<T>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        Iter::new(self)
     }
 }
 

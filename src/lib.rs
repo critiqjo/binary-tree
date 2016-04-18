@@ -32,6 +32,27 @@ pub trait Node {
 
     /// Returns the value of the current node.
     fn value(&self) -> &Self::Value;
+
+    /// Walk down the tree
+    fn walk<F>(&self, mut forth: F)
+        where F: FnMut(&Self) -> WalkAction,
+    {
+        use WalkAction::*;
+
+        let mut subtree = Some(self);
+        loop {
+            if let Some(mut st) = subtree {
+                let action = forth(&mut st);
+                subtree = match action {
+                    Left => st.left(),
+                    Right => st.right(),
+                    Stop => break,
+                };
+            } else {
+                break;
+            }
+        }
+    }
 }
 
 /// Mutating methods on a Binary Tree node.
@@ -49,6 +70,10 @@ pub trait NodeMut: Node + Sized {
 
     /// Replace the right subtree with `tree` and return the old one.
     fn insert_right(&mut self, tree: Option<Self::NodePtr>) -> Option<Self::NodePtr>;
+
+    /// Consume a NodePtr and return its value as owned (make sure that all
+    /// other fields are dropped)
+    fn value_owned(this: Self::NodePtr) -> Self::Value;
 
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {

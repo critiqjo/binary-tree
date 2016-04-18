@@ -56,6 +56,10 @@ impl<T> NodeMut for PlainTree<T> {
         mem::swap(&mut self.right, &mut st);
         st
     }
+
+    fn value_owned(_: Self::NodePtr) -> T {
+        unimplemented!()
+    }
 }
 
 #[cfg(test)]

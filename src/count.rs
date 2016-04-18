@@ -35,10 +35,10 @@ impl<'a, T> IntoIterator for &'a CountTree<T>
     where T: Countable
 {
     type Item = &'a T;
-    type IntoIter = impl Iterator<Item=Self::Item>;
+    type IntoIter = NodeIter<'a, CountNode<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        NodeIter::new(&self.0).map(|n| &n.val)
+        NodeIter::new(&self.0)
     }
 }
 
@@ -105,6 +105,12 @@ impl<T: Countable> NodeMut for CountNode<T> {
         self.right_sum = tree.as_ref().map_or(0, |tree| tree.total_count());
         mem::swap(&mut self.right, &mut tree);
         tree
+    }
+
+    fn value_owned(this: Self::NodePtr) -> T {
+        use std::ptr;
+        let node = unsafe { ptr::read(Box::into_raw(this)) };
+        node.val
     }
 }
 

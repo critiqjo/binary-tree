@@ -85,14 +85,15 @@ pub enum WalkAction {
 }
 
 /// Walks down the tree by detaching subtrees, then reattaches them back.
-pub fn walk_mut<T, F>(root: &mut T, mut f: F)
+pub fn walk_mut<T, FF, FB>(root: &mut T, mut ff: FF, mut fb: FB)
     where T: NodeMut,
-          F: FnMut(&mut T) -> WalkAction
+          FF: FnMut(&mut T) -> WalkAction,
+          FB: FnMut(&mut T, WalkAction),
 {
     use WalkAction::*;
 
     let mut stack = Vec::with_capacity(8);
-    let root_action = f(root);
+    let root_action = ff(root);
     let mut subtree = match root_action {
         Left => root.detach_left(),
         Right => root.detach_right(),
@@ -101,7 +102,7 @@ pub fn walk_mut<T, F>(root: &mut T, mut f: F)
     let mut action = root_action;
     while action != Stop {
         if let Some(mut st) = subtree {
-            action = f(&mut st);
+            action = ff(&mut st);
             subtree = match action {
                 Left => st.detach_left(),
                 Right => st.detach_right(),
@@ -112,13 +113,15 @@ pub fn walk_mut<T, F>(root: &mut T, mut f: F)
             break;
         }
     }
-    if let Some((mut sst, _)) = stack.pop() {
+    if let Some((mut sst, action)) = stack.pop() {
+        fb(&mut sst, action); // the final action is irrelevant
         while let Some((mut st, action)) = stack.pop() {
             match action {
                 Left => st.insert_left(Some(sst)),
                 Right => st.insert_right(Some(sst)),
                 Stop => unreachable!(),
             };
+            fb(&mut st, action);
             sst = st;
         }
         match root_action {
@@ -127,4 +130,5 @@ pub fn walk_mut<T, F>(root: &mut T, mut f: F)
             Stop => unreachable!(),
         };
     }
+    fb(root, root_action);
 }

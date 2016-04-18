@@ -102,14 +102,14 @@ mod tests {
         let mut steps = vec![Right, Left, Stop];
         {
             let mut step_iter = steps.drain(..);
-            walk_mut(&mut tt, |st| {
-                let action = step_iter.next().unwrap();
+            walk_mut(&mut tt, |_| {
+                step_iter.next().unwrap()
+            }, |st, action| {
                 match action {
                     Right => assert_eq!(st.val, 20),
                     Left => assert_eq!(st.val, 30),
                     Stop => assert_eq!(st.val, 25),
                 }
-                action
             });
         }
         assert_eq!(steps.len(), 0);

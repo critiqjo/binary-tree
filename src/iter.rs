@@ -100,16 +100,23 @@ mod tests {
     use NodeMut;
     use count::CountNode;
     use super::NodeIter;
+    use super::NodeMutIter;
 
     #[test]
     fn iteration() {
-        let mut ct = CountNode::new(7);
-        let mut ct_l = CountNode::new(8);
+        let mut ct = Box::new(CountNode::new(7u64));
+        let mut ct_l = Box::new(CountNode::new(8));
         ct_l.insert_right(Some(Box::new(CountNode::new(12))));
-        ct.insert_left(Some(Box::new(ct_l)));
+        ct.insert_left(Some(ct_l));
         ct.insert_right(Some(Box::new(CountNode::new(5))));
 
-        let vals: Vec<_> = NodeIter::new(&ct).map(|v| *v).collect();
+        {
+            let vals: Vec<_> = NodeIter::new(&*ct).collect();
+            assert_eq!(vals, [&8, &12, &7, &5]);
+        }
+
+        let node_mi: NodeMutIter<CountNode<_>> = NodeMutIter::new(ct);
+        let vals: Vec<_> = node_mi.collect();
         assert_eq!(vals, [8, 12, 7, 5]);
     }
 }

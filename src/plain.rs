@@ -63,7 +63,6 @@ mod tests {
     use super::PlainTree;
     use Node;
     use NodeMut;
-    use walk_mut;
 
     #[test]
     fn rotate() {
@@ -102,7 +101,7 @@ mod tests {
         let mut steps = vec![Right, Left, Stop];
         {
             let mut step_iter = steps.drain(..);
-            walk_mut(&mut tt, |_| {
+            tt.walk_mut(|_| {
                 step_iter.next().unwrap()
             }, |st, action| {
                 match action {

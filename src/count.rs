@@ -107,10 +107,8 @@ impl<T: Countable> NodeMut for CountNode<T> {
         tree
     }
 
-    fn value_owned(this: Self::NodePtr) -> T {
-        use std::ptr;
-        let node = unsafe { ptr::read(Box::into_raw(this)) };
-        node.val
+    fn value_owned(self) -> T {
+        self.val
     }
 }
 

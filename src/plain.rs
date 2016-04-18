@@ -57,8 +57,8 @@ impl<T> NodeMut for PlainTree<T> {
         st
     }
 
-    fn value_owned(_: Self::NodePtr) -> T {
-        unimplemented!()
+    fn value_owned(self) -> T {
+        self.val
     }
 }
 

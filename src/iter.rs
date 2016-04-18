@@ -1,5 +1,6 @@
 use Node;
 use NodeMut;
+use unbox::Unbox;
 
 #[derive(PartialEq)]
 enum IterAction {
@@ -67,7 +68,8 @@ impl<T> NodeMutIter<T>
 }
 
 impl<T> Iterator for NodeMutIter<T>
-    where T: NodeMut
+    where T: NodeMut,
+          T::NodePtr: Unbox<T>,
 {
     type Item = T::Value;
 
@@ -86,7 +88,7 @@ impl<T> Iterator for NodeMutIter<T>
             if let Some(st) = subtree.detach_right() {
                 self.stack.push((st, IterAction::Left));
             }
-            Some(T::value_owned(subtree))
+            Some(subtree.unbox().value_owned())
         } else {
             None
         }

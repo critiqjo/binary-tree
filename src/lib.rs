@@ -13,6 +13,7 @@ pub mod cow;
 pub mod count;
 pub mod iter;
 pub mod plain;
+pub mod unbox;
 
 pub trait BinaryTree {
     type Node: Node;
@@ -71,9 +72,8 @@ pub trait NodeMut: Node + Sized {
     /// Replace the right subtree with `tree` and return the old one.
     fn insert_right(&mut self, tree: Option<Self::NodePtr>) -> Option<Self::NodePtr>;
 
-    /// Consume a NodePtr and return its value as owned (make sure that all
-    /// other fields are dropped)
-    fn value_owned(this: Self::NodePtr) -> Self::Value;
+    /// Consume a Node and return its value
+    fn value_owned(self) -> Self::Value;
 
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {

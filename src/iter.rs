@@ -32,13 +32,9 @@ impl<'a, T> Iterator for NodeIter<'a, T>
     fn next(&mut self) -> Option<&'a T::Value> {
         if let Some((mut subtree, action)) = self.stack.pop() {
             if action == IterAction::Left {
-                loop {
-                    if let Some(st) = subtree.left() {
-                        self.stack.push((&*subtree, IterAction::Right));
-                        subtree = st;
-                    } else {
-                        break;
-                    }
+                while let Some(st) = subtree.left() {
+                    self.stack.push((&*subtree, IterAction::Right));
+                    subtree = st;
                 }
             }
             if let Some(st) = subtree.right() {
@@ -76,13 +72,9 @@ impl<T> Iterator for NodeMutIter<T>
     fn next(&mut self) -> Option<T::Value> {
         if let Some((mut subtree, action)) = self.stack.pop() {
             if action == IterAction::Left {
-                loop {
-                    if let Some(st) = subtree.detach_left() {
-                        self.stack.push((subtree, IterAction::Right));
-                        subtree = st;
-                    } else {
-                        break;
-                    }
+                while let Some(st) = subtree.detach_left() {
+                    self.stack.push((subtree, IterAction::Right));
+                    subtree = st;
                 }
             }
             if let Some(st) = subtree.detach_right() {

@@ -41,17 +41,13 @@ pub trait Node {
         use WalkAction::*;
 
         let mut subtree = Some(self);
-        loop {
-            if let Some(mut st) = subtree {
-                let action = forth(&mut st);
-                subtree = match action {
-                    Left => st.left(),
-                    Right => st.right(),
-                    Stop => break,
-                };
-            } else {
-                break;
-            }
+        while let Some(mut st) = subtree {
+            let action = forth(&mut st);
+            subtree = match action {
+                Left => st.left(),
+                Right => st.right(),
+                Stop => break,
+            };
         }
     }
 }

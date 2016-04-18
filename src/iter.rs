@@ -25,9 +25,9 @@ impl<'a, T> NodeIter<'a, T>
 impl<'a, T> Iterator for NodeIter<'a, T>
     where T: Node + 'a
 {
-    type Item = &'a T::Value;
+    type Item = &'a T;
 
-    fn next(&mut self) -> Option<&'a T::Value> {
+    fn next(&mut self) -> Option<&'a T> {
         if let Some((mut subtree, action)) = self.stack.pop() {
             if action == IterAction::Left {
                 loop {
@@ -42,7 +42,7 @@ impl<'a, T> Iterator for NodeIter<'a, T>
             if let Some(st) = subtree.right() {
                 self.stack.push((&*st, IterAction::Left));
             }
-            Some(subtree.value())
+            Some(subtree)
         } else {
             None
         }

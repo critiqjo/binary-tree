@@ -35,10 +35,10 @@ impl<'a, T> IntoIterator for &'a CountTree<T>
     where T: Countable
 {
     type Item = &'a T;
-    type IntoIter = NodeIter<'a, CountNode<T>>;
+    type IntoIter = impl Iterator<Item=Self::Item>;
 
     fn into_iter(self) -> Self::IntoIter {
-        NodeIter::new(&self.0)
+        NodeIter::new(&self.0).map(|n| &n.val)
     }
 }
 

@@ -19,10 +19,9 @@ impl<T> Unbox<T> for Rc<T>
 {
     fn unbox(mut self) -> T {
         Rc::make_mut(&mut self);
-        if let Ok(inner) = Rc::try_unwrap(self) {
-            inner
-        } else {
-            unreachable!("Unboxing failed after make_mut!")
+        match Rc::try_unwrap(self) {
+            Ok(inner) => inner,
+            _ => unreachable!(),
         }
     }
 }
@@ -32,10 +31,9 @@ impl<T> Unbox<T> for Arc<T>
 {
     fn unbox(mut self) -> T {
         Arc::make_mut(&mut self);
-        if let Ok(inner) = Arc::try_unwrap(self) {
-            inner
-        } else {
-            unreachable!("Unboxing failed after make_mut!")
+        match Arc::try_unwrap(self) {
+            Ok(inner) => inner,
+            _ => unreachable!(),
         }
     }
 }

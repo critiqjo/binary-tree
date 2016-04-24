@@ -120,7 +120,7 @@ mod tests {
 
     #[test]
     fn stack_blow() {
-        use iter::NodeMutIter;
+        use iter::IntoIter;
         let mut pt = Box::new(PlainTree::new(20));
         for _ in 0..200000 {
             let mut pt2 = Box::new(PlainTree::new(20));
@@ -128,7 +128,7 @@ mod tests {
             pt = pt2;
         }
         // comment out the lines below to observe a stack overflow
-        let piter: NodeMutIter<PlainTree<_>> = NodeMutIter::new(pt);
+        let piter: IntoIter<PlainTree<_>> = IntoIter::new(pt);
         for _ in piter {}
     }
 }

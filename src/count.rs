@@ -15,7 +15,7 @@ use std::mem;
 use Node;
 use NodeMut;
 use BinaryTree;
-use iter::NodeIter;
+use iter::Iter;
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
@@ -41,10 +41,10 @@ impl<T> BinaryTree for CountTree<T> {
 
 impl<'a, T> IntoIterator for &'a CountTree<T> {
     type Item = &'a T;
-    type IntoIter = NodeIter<'a, CountNode<T>>;
+    type IntoIter = Iter<'a, CountNode<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        NodeIter::new(&self.0)
+        Iter::new(&self.0)
     }
 }
 

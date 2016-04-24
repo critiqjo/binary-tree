@@ -8,23 +8,23 @@ enum IterAction {
     Right,
 }
 
-pub struct NodeIter<'a, T>
+pub struct Iter<'a, T>
     where T: Node + 'a
 {
     stack: Vec<(&'a T, IterAction)>,
 }
 
-impl<'a, T> NodeIter<'a, T>
+impl<'a, T> Iter<'a, T>
     where T: Node + 'a
 {
-    pub fn new(tree: &'a T) -> NodeIter<'a, T> {
-        NodeIter {
+    pub fn new(tree: &'a T) -> Iter<'a, T> {
+        Iter {
             stack: vec![(tree, IterAction::Left)],
         }
     }
 }
 
-impl<'a, T> Iterator for NodeIter<'a, T>
+impl<'a, T> Iterator for Iter<'a, T>
     where T: Node + 'a
 {
     type Item = &'a T::Value;
@@ -47,23 +47,23 @@ impl<'a, T> Iterator for NodeIter<'a, T>
     }
 }
 
-pub struct NodeMutIter<T>
+pub struct IntoIter<T>
     where T: NodeMut
 {
     stack: Vec<(T::NodePtr, IterAction)>,
 }
 
-impl<T> NodeMutIter<T>
+impl<T> IntoIter<T>
     where T: NodeMut
 {
-    pub fn new(tree: T::NodePtr) -> NodeMutIter<T> {
-        NodeMutIter {
+    pub fn new(tree: T::NodePtr) -> IntoIter<T> {
+        IntoIter {
             stack: vec![(tree, IterAction::Left)],
         }
     }
 }
 
-impl<T> Iterator for NodeMutIter<T>
+impl<T> Iterator for IntoIter<T>
     where T: NodeMut,
           T::NodePtr: Unbox<T>,
 {
@@ -91,8 +91,8 @@ impl<T> Iterator for NodeMutIter<T>
 mod tests {
     use NodeMut;
     use count::CountNode;
-    use super::NodeIter;
-    use super::NodeMutIter;
+    use super::Iter;
+    use super::IntoIter;
 
     #[test]
     fn iteration() {
@@ -103,11 +103,11 @@ mod tests {
         ct.insert_right(Some(Box::new(CountNode::new(5))));
 
         {
-            let vals: Vec<_> = NodeIter::new(&*ct).collect();
+            let vals: Vec<_> = Iter::new(&*ct).collect();
             assert_eq!(vals, [&8, &12, &7, &5]);
         }
 
-        let node_mi: NodeMutIter<CountNode<_>> = NodeMutIter::new(ct);
+        let node_mi: IntoIter<CountNode<_>> = IntoIter::new(ct);
         let vals: Vec<_> = node_mi.collect();
         assert_eq!(vals, [8, 12, 7, 5]);
     }

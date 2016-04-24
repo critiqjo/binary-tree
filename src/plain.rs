@@ -117,4 +117,18 @@ mod tests {
         }
         assert_eq!(steps.len(), 0);
     }
+
+    #[test]
+    fn stack_blow() {
+        use iter::NodeMutIter;
+        let mut pt = Box::new(PlainTree::new(20));
+        for _ in 0..200000 {
+            let mut pt2 = Box::new(PlainTree::new(20));
+            pt2.insert_left(Some(pt));
+            pt = pt2;
+        }
+        // comment out the lines below to observe a stack overflow
+        let piter: NodeMutIter<PlainTree<_>> = NodeMutIter::new(pt);
+        for _ in piter {}
+    }
 }

@@ -28,11 +28,36 @@ impl<T> CountTree<T> {
         CountTree(Box::new(CountNode::new(val)))
     }
 
-    fn len(&self) -> usize {
-        self.root().count() as usize
+    pub fn len(&self) -> usize {
+        self.root().count as usize
     }
 
-    // TODO get, get_mut, insert, delete, len, {push|pop}_{front|back}
+    pub fn get<'a>(&'a self, index: usize) -> Option<&'a T> {
+        use WalkAction::*;
+
+        if index > self.len() {
+            None
+        } else {
+            let mut val = None;
+            let mut up_count = 0;
+            self.0.walk(|cn: &'a CountNode<T>| {
+                let cur_index = cn.lcount() as usize + up_count;
+                if index < cur_index {
+                    Left
+                } else if index == cur_index {
+                    val = Some(cn.value());
+                    Stop
+                } else {
+                    up_count = cur_index + 1;
+                    Right
+                }
+            });
+            assert!(val.is_some());
+            val
+        }
+    }
+
+    // TODO get_mut, insert, delete, {push|pop}_{front|back}
     // TODO ? clear, is_empty, iter_mut
     // TODO { O(n) } truncate, append, split_off, impl FromIterator, retain
 }
@@ -118,7 +143,7 @@ pub struct CountNode<T> {
     val: T,
     left: Option<NodePtr<T>>,
     right: Option<NodePtr<T>>,
-    total: u32,
+    count: u32,
 }
 
 impl<T> CountNode<T> {
@@ -127,24 +152,20 @@ impl<T> CountNode<T> {
             val: val,
             left: None,
             right: None,
-            total: 1,
+            count: 1,
         }
     }
 
-    pub fn count(&self) -> u32 {
-        self.total
-    }
-
     fn lcount(&self) -> u32 {
-        self.left.as_ref().map_or(0, |tree| tree.count())
+        self.left.as_ref().map_or(0, |tree| tree.count)
     }
 
     fn rcount(&self) -> u32 {
-        self.right.as_ref().map_or(0, |tree| tree.count())
+        self.right.as_ref().map_or(0, |tree| tree.count)
     }
 
-    fn update_total(&mut self) {
-        self.total = self.lcount() + self.rcount() + 1;
+    fn update_count(&mut self) {
+        self.count = self.lcount() + self.rcount() + 1;
     }
 }
 
@@ -169,25 +190,25 @@ impl<T> NodeMut for CountNode<T> {
 
     fn detach_left(&mut self) -> Option<Self::NodePtr> {
         let tree = self.left.take();
-        self.update_total();
+        self.update_count();
         tree
     }
 
     fn detach_right(&mut self) -> Option<Self::NodePtr> {
         let tree = self.right.take();
-        self.update_total();
+        self.update_count();
         tree
     }
 
     fn insert_left(&mut self, mut tree: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         mem::swap(&mut self.left, &mut tree);
-        self.update_total();
+        self.update_count();
         tree
     }
 
     fn insert_right(&mut self, mut tree: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         mem::swap(&mut self.right, &mut tree);
-        self.update_total();
+        self.update_count();
         tree
     }
 
@@ -200,16 +221,22 @@ impl<T> NodeMut for CountNode<T> {
 mod tests {
     use NodeMut;
     use super::CountNode;
+    use super::CountTree;
 
     #[test]
     fn counting() {
-        let mut ct = CountNode::new(7);
-        let mut ct_l = CountNode::new(8);
-        ct_l.insert_right(Some(Box::new(CountNode::new(12))));
-        ct.insert_left(Some(Box::new(ct_l)));
-        ct.insert_right(Some(Box::new(CountNode::new(5))));
-        assert_eq!(ct.lcount(), 2);
-        assert_eq!(ct.rcount(), 1);
-        assert_eq!(ct.count(), 4);
+        let mut cn = Box::new(CountNode::new(7));
+        let mut cn_l = Box::new(CountNode::new(8));
+        cn_l.insert_right(Some(Box::new(CountNode::new(12))));
+        cn.insert_left(Some(cn_l));
+        cn.insert_right(Some(Box::new(CountNode::new(5))));
+        assert_eq!(cn.lcount(), 2);
+        assert_eq!(cn.rcount(), 1);
+        assert_eq!(cn.count, 4);
+        let ct = CountTree(cn);
+        assert_eq!(ct.get(0), Some(&8));
+        assert_eq!(ct.get(1), Some(&12));
+        assert_eq!(ct.get(2), Some(&7));
+        assert_eq!(ct.get(3), Some(&5));
     }
 }

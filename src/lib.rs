@@ -35,8 +35,8 @@ pub trait Node {
     fn value(&self) -> &Self::Value;
 
     /// Walk down the tree
-    fn walk<F>(&self, mut forth: F)
-        where F: FnMut(&Self) -> WalkAction,
+    fn walk<'a, F>(&'a self, mut forth: F)
+        where F: FnMut(&'a Self) -> WalkAction,
     {
         use WalkAction::*;
 

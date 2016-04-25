@@ -15,15 +15,15 @@ use std::mem;
 use Node;
 use NodeMut;
 use BinaryTree;
-use iter::Iter;
+use iter::{Iter, IntoIter};
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
-pub struct CountTree<T>(CountNode<T>);
+pub struct CountTree<T>(NodePtr<T>);
 
 impl<T> CountTree<T> {
     pub fn new(val: T) -> CountTree<T> {
-        CountTree(CountNode::new(val))
+        CountTree(Box::new(CountNode::new(val)))
     }
 
     // TODO get, get_mut, insert, delete, len, {push|pop}_{front|back}
@@ -35,7 +35,7 @@ impl<T> BinaryTree for CountTree<T> {
     type Node = CountNode<T>;
 
     fn root(&self) -> &Self::Node {
-        &self.0
+        &*self.0
     }
 }
 
@@ -44,7 +44,16 @@ impl<'a, T> IntoIterator for &'a CountTree<T> {
     type IntoIter = Iter<'a, CountNode<T>>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter::new(&self.0)
+        Iter::new(self.root())
+    }
+}
+
+impl<T> IntoIterator for CountTree<T> {
+    type Item = T;
+    type IntoIter = IntoIter<CountNode<T>>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        IntoIter::new(self.0)
     }
 }
 

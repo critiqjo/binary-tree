@@ -155,6 +155,7 @@ pub struct CountNode<T> {
     left: Option<NodePtr<T>>,
     right: Option<NodePtr<T>>,
     count: u32,
+    height: u16,
 }
 
 impl<T> CountNode<T> {
@@ -164,6 +165,7 @@ impl<T> CountNode<T> {
             left: None,
             right: None,
             count: 1,
+            height: 0,
         }
     }
 
@@ -175,8 +177,14 @@ impl<T> CountNode<T> {
         self.right.as_ref().map_or(0, |tree| tree.count)
     }
 
-    fn update_count(&mut self) {
+    fn update_stats(&mut self) {
+        use std::cmp::max;
         self.count = self.lcount() + self.rcount() + 1;
+        self.height = max(self.left.as_ref().map_or(0, |tree| tree.height),
+                          self.right.as_ref().map_or(0, |tree| tree.height));
+        if self.count > 1 {
+            self.height += 1;
+        }
     }
 }
 
@@ -201,25 +209,25 @@ impl<T> NodeMut for CountNode<T> {
 
     fn detach_left(&mut self) -> Option<Self::NodePtr> {
         let tree = self.left.take();
-        self.update_count();
+        self.update_stats();
         tree
     }
 
     fn detach_right(&mut self) -> Option<Self::NodePtr> {
         let tree = self.right.take();
-        self.update_count();
+        self.update_stats();
         tree
     }
 
     fn insert_left(&mut self, mut tree: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         mem::swap(&mut self.left, &mut tree);
-        self.update_count();
+        self.update_stats();
         tree
     }
 
     fn insert_right(&mut self, mut tree: Option<Self::NodePtr>) -> Option<Self::NodePtr> {
         mem::swap(&mut self.right, &mut tree);
-        self.update_count();
+        self.update_stats();
         tree
     }
 
@@ -244,6 +252,7 @@ mod tests {
         assert_eq!(cn.lcount(), 2);
         assert_eq!(cn.rcount(), 1);
         assert_eq!(cn.count, 4);
+        assert_eq!(cn.height, 2);
         let ct = CountTree(Some(cn));
         assert_eq!(ct.get(0), Some(&8));
         assert_eq!(ct.get(1), Some(&12));

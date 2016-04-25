@@ -9,13 +9,15 @@
 //!   - splitting at arbitrary position
 //!   - truncating the length
 //!   - appending another list
+//! - You have less than 4.29 billion elements!
 
 use std::mem;
 
 use Node;
 use NodeMut;
 use BinaryTree;
-use iter::{Iter, IntoIter};
+use iter::Iter as GenIter;
+use iter::IntoIter as GenIntoIter;
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
@@ -24,6 +26,10 @@ pub struct CountTree<T>(NodePtr<T>);
 impl<T> CountTree<T> {
     pub fn new(val: T) -> CountTree<T> {
         CountTree(Box::new(CountNode::new(val)))
+    }
+
+    fn len(&self) -> usize {
+        self.root().count() as usize
     }
 
     // TODO get, get_mut, insert, delete, len, {push|pop}_{front|back}
@@ -41,27 +47,78 @@ impl<T> BinaryTree for CountTree<T> {
 
 impl<'a, T> IntoIterator for &'a CountTree<T> {
     type Item = &'a T;
-    type IntoIter = Iter<'a, CountNode<T>>;
+    type IntoIter = Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        Iter::new(self.root())
+        Iter {
+            inner: GenIter::new(self.root()),
+            remaining: self.len(),
+        }
     }
 }
+
+pub struct Iter<'a, T: 'a> {
+    inner: GenIter<'a, CountNode<T>>,
+    remaining: usize,
+}
+
+impl<'a, T> Iterator for Iter<'a, T> {
+    type Item = &'a T;
+
+    fn next(&mut self) -> Option<&'a T> {
+        if self.remaining > 0 {
+            self.remaining -= 1;
+        }
+        self.inner.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remaining, Some(self.remaining))
+    }
+}
+
+impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
 impl<T> IntoIterator for CountTree<T> {
     type Item = T;
-    type IntoIter = IntoIter<CountNode<T>>;
+    type IntoIter = IntoIter<T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        IntoIter::new(self.0)
+        let len = self.len();
+        IntoIter {
+            inner: GenIntoIter::new(self.0),
+            remaining: len,
+        }
     }
 }
+
+pub struct IntoIter<T> {
+    inner: GenIntoIter<CountNode<T>>,
+    remaining: usize,
+}
+
+impl<T> Iterator for IntoIter<T> {
+    type Item = T;
+
+    fn next(&mut self) -> Option<T> {
+        if self.remaining > 0 {
+            self.remaining -= 1;
+        }
+        self.inner.next()
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (self.remaining, Some(self.remaining))
+    }
+}
+
+impl<T> ExactSizeIterator for IntoIter<T> {}
 
 pub struct CountNode<T> {
     val: T,
     left: Option<NodePtr<T>>,
     right: Option<NodePtr<T>>,
-    total: u64,
+    total: u32,
 }
 
 impl<T> CountNode<T> {
@@ -74,15 +131,15 @@ impl<T> CountNode<T> {
         }
     }
 
-    pub fn count(&self) -> u64 {
+    pub fn count(&self) -> u32 {
         self.total
     }
 
-    fn lcount(&self) -> u64 {
+    fn lcount(&self) -> u32 {
         self.left.as_ref().map_or(0, |tree| tree.count())
     }
 
-    fn rcount(&self) -> u64 {
+    fn rcount(&self) -> u32 {
         self.right.as_ref().map_or(0, |tree| tree.count())
     }
 

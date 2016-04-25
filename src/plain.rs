@@ -1,5 +1,13 @@
+//! Simple binary tree.
+//!
+//! ## When should you use PlainTree?
+//!
+//! You should not use PlainTree for anything, except may be to get to know what
+//! a binary tree is!
+
 use std::mem;
 
+use BinaryTree;
 use Node;
 use NodeMut;
 
@@ -17,6 +25,14 @@ impl<T> PlainTree<T> {
             left: None,
             right: None,
         }
+    }
+}
+
+impl<T> BinaryTree for PlainTree<T> {
+    type Node = PlainTree<T>;
+
+    fn root(&self) -> &Self::Node {
+        &self
     }
 }
 

@@ -57,7 +57,7 @@ impl<T> CountTree<T> {
         }
     }
 
-    // TODO get_mut, insert, delete, {push|pop}_{front|back}
+    // TODO get_mut
     // TODO ? clear, is_empty, iter_mut
     // TODO { O(n) } truncate, append, split_off, impl FromIterator, retain
 }
@@ -177,6 +177,20 @@ impl<T> CountNode<T> {
         self.right.as_ref().map_or(0, |tree| tree.count)
     }
 
+    // generalized version of AVL tree balance factor: h(left) - h(right)
+    fn balance_factor(&self) -> i32 {
+        if self.count == 1 {
+            0
+        } else if self.left.is_none() {
+            -1 - self.right.as_ref().unwrap().height as i32
+        } else if self.right.is_none() {
+            1 + self.left.as_ref().unwrap().height as i32
+        } else {
+            self.left.as_ref().unwrap().height as i32 -
+                self.right.as_ref().unwrap().height as i32
+        }
+    }
+
     fn update_stats(&mut self) {
         use std::cmp::max;
         self.count = self.lcount() + self.rcount() + 1;
@@ -253,6 +267,7 @@ mod tests {
         assert_eq!(cn.rcount(), 1);
         assert_eq!(cn.count, 4);
         assert_eq!(cn.height, 2);
+        assert_eq!(cn.balance_factor(), 1);
         let ct = CountTree(Some(cn));
         assert_eq!(ct.get(0), Some(&8));
         assert_eq!(ct.get(1), Some(&12));

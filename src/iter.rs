@@ -17,9 +17,9 @@ pub struct Iter<'a, T>
 impl<'a, T> Iter<'a, T>
     where T: Node + 'a
 {
-    pub fn new(tree: &'a T) -> Iter<'a, T> {
+    pub fn new(root: Option<&'a T>) -> Iter<'a, T> {
         Iter {
-            stack: vec![(tree, IterAction::Left)],
+            stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]),
         }
     }
 }
@@ -48,24 +48,26 @@ impl<'a, T> Iterator for Iter<'a, T>
 }
 
 pub struct IntoIter<T>
-    where T: NodeMut
+    where T: NodeMut,
+          T::NodePtr: Unbox<T>
 {
     stack: Vec<(T::NodePtr, IterAction)>,
 }
 
 impl<T> IntoIter<T>
-    where T: NodeMut
+    where T: NodeMut,
+          T::NodePtr: Unbox<T>
 {
-    pub fn new(tree: T::NodePtr) -> IntoIter<T> {
+    pub fn new(root: Option<T::NodePtr>) -> IntoIter<T> {
         IntoIter {
-            stack: vec![(tree, IterAction::Left)],
+            stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]),
         }
     }
 }
 
 impl<T> Iterator for IntoIter<T>
     where T: NodeMut,
-          T::NodePtr: Unbox<T>,
+          T::NodePtr: Unbox<T>
 {
     type Item = T::Value;
 
@@ -87,6 +89,15 @@ impl<T> Iterator for IntoIter<T>
     }
 }
 
+impl<T> Drop for IntoIter<T>
+    where T: NodeMut,
+          T::NodePtr: Unbox<T>
+{
+    fn drop(&mut self) {
+        while let Some(_) = self.next() {}
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use NodeMut;
@@ -103,11 +114,11 @@ mod tests {
         ct.insert_right(Some(Box::new(CountNode::new(5))));
 
         {
-            let vals: Vec<_> = Iter::new(&*ct).collect();
+            let vals: Vec<_> = Iter::new(Some(&*ct)).collect();
             assert_eq!(vals, [&8, &12, &7, &5]);
         }
 
-        let node_mi: IntoIter<CountNode<_>> = IntoIter::new(ct);
+        let node_mi: IntoIter<CountNode<_>> = IntoIter::new(Some(ct));
         let vals: Vec<_> = node_mi.collect();
         assert_eq!(vals, [8, 12, 7, 5]);
     }

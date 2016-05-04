@@ -21,26 +21,26 @@ use iter::IntoIter as GenIntoIter;
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
-pub struct CountTree<T>(NodePtr<T>);
+pub struct CountTree<T>(Option<NodePtr<T>>);
 
 impl<T> CountTree<T> {
-    pub fn new(val: T) -> CountTree<T> {
-        CountTree(Box::new(CountNode::new(val)))
+    pub fn new() -> CountTree<T> {
+        CountTree(None)
     }
 
     pub fn len(&self) -> usize {
-        self.root().count as usize
+        self.root().map_or(0, |node| node.count as usize)
     }
 
     pub fn get<'a>(&'a self, index: usize) -> Option<&'a T> {
         use WalkAction::*;
 
-        if index > self.len() {
+        if index >= self.len() {
             None
         } else {
             let mut val = None;
             let mut up_count = 0;
-            self.0.walk(|cn: &'a CountNode<T>| {
+            self.root().unwrap().walk(|cn: &'a CountNode<T>| {
                 let cur_index = cn.lcount() as usize + up_count;
                 if index < cur_index {
                     Left
@@ -65,8 +65,17 @@ impl<T> CountTree<T> {
 impl<T> BinaryTree for CountTree<T> {
     type Node = CountNode<T>;
 
-    fn root(&self) -> &Self::Node {
-        &*self.0
+    fn root(&self) -> Option<&Self::Node> {
+        self.0.as_ref().map(|nodeptr| &**nodeptr)
+    }
+}
+
+// prevent the unlikely event of stack overflow
+impl<T> Drop for CountTree<T> {
+    fn drop(&mut self) {
+        let mut inner = None;
+        mem::swap(&mut self.0, &mut inner);
+        let _: GenIntoIter<CountNode<T>> = GenIntoIter::new(inner);
     }
 }
 
@@ -108,10 +117,12 @@ impl<T> IntoIterator for CountTree<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
-    fn into_iter(self) -> Self::IntoIter {
+    fn into_iter(mut self) -> Self::IntoIter {
         let len = self.len();
+        let mut inner = None;
+        mem::swap(&mut self.0, &mut inner);
         IntoIter {
-            inner: GenIntoIter::new(self.0),
+            inner: GenIntoIter::new(inner),
             remaining: len,
         }
     }
@@ -233,10 +244,11 @@ mod tests {
         assert_eq!(cn.lcount(), 2);
         assert_eq!(cn.rcount(), 1);
         assert_eq!(cn.count, 4);
-        let ct = CountTree(cn);
+        let ct = CountTree(Some(cn));
         assert_eq!(ct.get(0), Some(&8));
         assert_eq!(ct.get(1), Some(&12));
         assert_eq!(ct.get(2), Some(&7));
         assert_eq!(ct.get(3), Some(&5));
+        assert_eq!(ct.get(4), None);
     }
 }

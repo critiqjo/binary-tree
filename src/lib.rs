@@ -18,7 +18,7 @@ pub mod unbox;
 pub trait BinaryTree {
     type Node: Node;
 
-    fn root(&self) -> &Self::Node;
+    fn root(&self) -> Option<&Self::Node>;
 }
 
 /// Generic methods for traversing a binary tree.

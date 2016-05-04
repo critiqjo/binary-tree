@@ -31,8 +31,8 @@ impl<T> PlainTree<T> {
 impl<T> BinaryTree for PlainTree<T> {
     type Node = PlainTree<T>;
 
-    fn root(&self) -> &Self::Node {
-        &self
+    fn root(&self) -> Option<&Self::Node> {
+        Some(&self)
     }
 }
 
@@ -143,8 +143,7 @@ mod tests {
             pt2.insert_left(Some(pt));
             pt = pt2;
         }
-        // comment out the lines below to observe a stack overflow
-        let piter: IntoIter<PlainTree<_>> = IntoIter::new(pt);
-        for _ in piter {}
+        // comment out the line below to observe a stack overflow
+        let _: IntoIter<PlainTree<_>> = IntoIter::new(Some(pt));
     }
 }

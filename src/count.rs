@@ -61,6 +61,45 @@ impl<T> CountTree<T> {
     }
 
     // TODO get_mut
+
+    /// Inserts a value at the given index. This is an O(log(n)) operation (worst case).
+    ///
+    /// # Panics
+    ///
+    /// Panics if index is greater than `self.len()`
+    pub fn insert(&mut self, index: usize, value: T) {
+        use WalkAction::*;
+
+        let len = self.len();
+        let new_node = Box::new(CountNode::new(value));
+        if len == 0 && index == 0 {
+            self.0 = Some(new_node);
+        } else if index < len {
+            let ref mut up_count = 0;
+            self.0.as_mut().unwrap().walk_mut(move |node| {
+                let cur_index = node.lcount() as usize + *up_count;
+                if index < cur_index {
+                    Left
+                } else if index == cur_index {
+                    Stop
+                } else {
+                    *up_count = cur_index + 1;
+                    Right
+                }
+            }, move |node| {
+                node.insert_before(new_node, |node, _| node.rebalance());
+            }, |node, _| node.rebalance());
+        } else if index == len {
+            self.0.as_mut().unwrap().walk_mut(|_| Right,
+                                              move |node| {
+                                                  node.insert_right(Some(new_node));
+                                              },
+                                              |node, _| node.rebalance());
+        } else {
+            panic!("index out of bounds!");
+        }
+    }
+
     // TODO ? clear, is_empty, iter_mut
     // TODO { O(n) } truncate, append, split_off, impl FromIterator, retain
 }
@@ -274,6 +313,8 @@ impl<T> NodeMut for CountNode<T> {
 
 #[cfg(test)]
 mod tests {
+    use BinaryTree;
+    use Node;
     use NodeMut;
     use super::CountNode;
     use super::CountTree;
@@ -287,7 +328,7 @@ mod tests {
     }
 
     #[test]
-    fn basic() {
+    fn custom() {
         let ct = CountTree(Some(test_nodes()));
         assert_eq!(ct.get(0), Some(&8));
         assert_eq!(ct.get(1), Some(&12));
@@ -317,5 +358,34 @@ mod tests {
         assert_eq!(ct.get(1), Some(&12));
         assert_eq!(ct.get(2), Some(&7));
         assert_eq!(ct.get(3), None);
+    }
+
+    #[test]
+    fn insert() {
+        let mut ct = CountTree::new();
+        assert_eq!(ct.get(0), None);
+        ct.insert(0, 1);
+        ct.insert(0, 2);
+        ct.insert(0, 3);
+        ct.insert(0, 4);
+        ct.insert(0, 5);
+        ct.insert(0, 6);
+        assert_eq!(ct.get(0), Some(&6));
+        assert_eq!(ct.get(1), Some(&5));
+        assert_eq!(ct.get(2), Some(&4));
+        assert_eq!(ct.get(3), Some(&3));
+        assert_eq!(ct.get(4), Some(&2));
+        assert_eq!(ct.get(5), Some(&1));
+        assert_eq!(ct.root().unwrap().balance_factor(), 0);
+        assert_eq!(ct.root().unwrap().value(), &4);
+        assert_eq!(ct.root().unwrap().left().unwrap().value(), &5);
+        assert_eq!(ct.root().unwrap().right().unwrap().value(), &2);
+        ct.insert(0, 7);
+        assert_eq!(ct.root().unwrap().balance_factor(), 0);
+        assert_eq!(ct.root().unwrap().left().unwrap().value(), &6);
+        assert_eq!(ct.get(6), Some(&1));
+        ct.insert(7, 0);
+        assert_eq!(ct.root().unwrap().balance_factor(), -1);
+        assert_eq!(ct.get(7), Some(&0));
     }
 }

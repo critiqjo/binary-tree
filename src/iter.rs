@@ -101,24 +101,24 @@ impl<T> Drop for IntoIter<T>
 #[cfg(test)]
 mod tests {
     use NodeMut;
-    use plain::PlainTree;
+    use test::TestNode;
     use super::Iter;
     use super::IntoIter;
 
     #[test]
     fn iteration() {
-        let mut ct = Box::new(PlainTree::new(7u64));
-        let mut ct_l = Box::new(PlainTree::new(8));
-        ct_l.insert_right(Some(Box::new(PlainTree::new(12))));
+        let mut ct = Box::new(TestNode::new(7));
+        let mut ct_l = Box::new(TestNode::new(8));
+        ct_l.insert_right(Some(Box::new(TestNode::new(12))));
         ct.insert_left(Some(ct_l));
-        ct.insert_right(Some(Box::new(PlainTree::new(5))));
+        ct.insert_right(Some(Box::new(TestNode::new(5))));
 
         {
             let vals: Vec<_> = Iter::new(Some(&*ct)).collect();
             assert_eq!(vals, [&8, &12, &7, &5]);
         }
 
-        let node_mi: IntoIter<PlainTree<_>> = IntoIter::new(Some(ct));
+        let node_mi: IntoIter<TestNode<_>> = IntoIter::new(Some(ct));
         let vals: Vec<_> = node_mi.collect();
         assert_eq!(vals, [8, 12, 7, 5]);
     }

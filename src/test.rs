@@ -1,26 +1,70 @@
-//! Simple binary tree.
-//!
-//! ## When should you use PlainTree?
-//!
-//! You should not use PlainTree for anything, except may be to get to know what
-//! a binary tree is!
+//! Data structures and algorithms for testing purposes.
 
 use std::mem;
+use std::cmp;
 
-use BinaryTree;
 use Node;
 use NodeMut;
 
-#[derive(Debug)]
-pub struct PlainTree<T> {
-    pub val: T,
-    pub left: Option<Box<PlainTree<T>>>,
-    pub right: Option<Box<PlainTree<T>>>,
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum Level {
+    Balanced(u32),
+    Imbalanced(u32),
 }
 
-impl<T> PlainTree<T> {
-    pub fn new(val: T) -> PlainTree<T> {
-        PlainTree {
+impl Level {
+    pub fn is_balanced(self) -> bool {
+        if let Level::Balanced(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn as_u32(self) -> u32 {
+        match self {
+            Level::Balanced(e) | Level::Imbalanced(e) => e,
+        }
+    }
+}
+
+/// `level = height + 1`. Implemented using recursion, so take care of the stack!
+/// `tolerance` is the difference in levels that is tolerated.
+pub fn compute_level<N: Node>(node: &N, tolerance: u32) -> Level {
+    use test::Level::*;
+
+    let llevel = node.left().map_or(Balanced(0), |n| compute_level(n, tolerance));
+    let rlevel = node.right().map_or(Balanced(0), |n| compute_level(n, tolerance));
+
+    if llevel.is_balanced() && rlevel.is_balanced() {
+        let max = cmp::max(llevel.as_u32(), rlevel.as_u32());
+        let min = cmp::min(llevel.as_u32(), rlevel.as_u32());
+        if max - min > tolerance {
+            Imbalanced(max + 1)
+        } else {
+            Balanced(max + 1)
+        }
+    } else {
+        Imbalanced(cmp::max(llevel.as_u32(), rlevel.as_u32()) + 1)
+    }
+}
+
+#[derive(Debug)]
+/// A minimal `Node` implementation.
+///
+/// ## When should you use `TestNode`?
+///
+/// You should not use `TestNode` for anything, except may be to get to know what
+/// a binary tree is!
+pub struct TestNode<T> {
+    pub val: T,
+    pub left: Option<Box<TestNode<T>>>,
+    pub right: Option<Box<TestNode<T>>>,
+}
+
+impl<T> TestNode<T> {
+    pub fn new(val: T) -> TestNode<T> {
+        TestNode {
             val: val,
             left: None,
             right: None,
@@ -28,15 +72,7 @@ impl<T> PlainTree<T> {
     }
 }
 
-impl<T> BinaryTree for PlainTree<T> {
-    type Node = PlainTree<T>;
-
-    fn root(&self) -> Option<&Self::Node> {
-        Some(&self)
-    }
-}
-
-impl<T> Node for PlainTree<T> {
+impl<T> Node for TestNode<T> {
     type Value = T;
 
     fn left(&self) -> Option<&Self> {
@@ -52,8 +88,8 @@ impl<T> Node for PlainTree<T> {
     }
 }
 
-impl<T> NodeMut for PlainTree<T> {
-    type NodePtr = Box<PlainTree<T>>;
+impl<T> NodeMut for TestNode<T> {
+    type NodePtr = Box<TestNode<T>>;
 
     fn detach_left(&mut self) -> Option<Self::NodePtr> {
         self.left.take()
@@ -80,17 +116,17 @@ impl<T> NodeMut for PlainTree<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::PlainTree;
+    use super::TestNode;
     use Node;
     use NodeMut;
 
-    fn test_tree() -> PlainTree<u32> {
-        PlainTree {
+    fn test_tree() -> TestNode<u32> {
+        TestNode {
             val: 20,
-            left: Some(Box::new(PlainTree::new(10))),
-            right: Some(Box::new(PlainTree {
+            left: Some(Box::new(TestNode::new(10))),
+            right: Some(Box::new(TestNode {
                 val: 30,
-                left: Some(Box::new(PlainTree::new(25))),
+                left: Some(Box::new(TestNode::new(25))),
                 right: None,
             })),
         }
@@ -140,13 +176,13 @@ mod tests {
     #[test]
     fn stack_blow() {
         use iter::IntoIter;
-        let mut pt = Box::new(PlainTree::new(20));
+        let mut pt = Box::new(TestNode::new(20));
         for _ in 0..200000 {
-            let mut pt2 = Box::new(PlainTree::new(20));
+            let mut pt2 = Box::new(TestNode::new(20));
             pt2.insert_left(Some(pt));
             pt = pt2;
         }
         // comment out the line below to observe a stack overflow
-        let _: IntoIter<PlainTree<_>> = IntoIter::new(Some(pt));
+        let _: IntoIter<TestNode<_>> = IntoIter::new(Some(pt));
     }
 }

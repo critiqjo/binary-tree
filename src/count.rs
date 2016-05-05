@@ -399,10 +399,11 @@ impl<T> NodeMut for CountNode<T> {
 #[cfg(test)]
 mod tests {
     use BinaryTree;
-    use Node;
     use NodeMut;
     use super::CountNode;
     use super::CountTree;
+    use test::compute_level;
+    use test::Level;
 
     fn test_nodes() -> Box<CountNode<u32>> {
         let mut cn = Box::new(CountNode::new(7));
@@ -438,6 +439,7 @@ mod tests {
         cn.detach_right();
         cn.rebalance();
         assert_eq!(cn.balance_factor(), 0);
+        assert_eq!(compute_level(&*cn, 1), Level::Balanced(2));
         let ct = CountTree(Some(cn));
         assert_eq!(ct.get(0), Some(&8));
         assert_eq!(ct.get(1), Some(&12));
@@ -457,38 +459,28 @@ mod tests {
         assert_eq!(ct.get(0), Some(&6));
         assert_eq!(ct.get(1), Some(&5));
         assert_eq!(ct.get(2), Some(&4));
-        assert_eq!(ct.get(3), Some(&3));
-        assert_eq!(ct.get(4), Some(&2));
-        assert_eq!(ct.root().unwrap().value(), &3);
-        assert_eq!(ct.root().unwrap().left().unwrap().value(), &5);
-        assert_eq!(ct.root().unwrap().right().unwrap().value(), &2);
-        assert_eq!(ct.root().unwrap().balance_factor(), 1);
         ct.insert(0, 7);
-        assert_eq!(ct.root().unwrap().lcount(), 2);
-        assert_eq!(ct.root().unwrap().rcount(), 3);
-        assert_eq!(ct.root().unwrap().balance_factor(), 0);
+        assert_eq!(ct.get(4), Some(&3));
+        assert_eq!(ct.get(5), Some(&2));
         assert_eq!(ct.root().unwrap().height, 2);
+        assert_eq!(compute_level(ct.root().unwrap(), 1), Level::Balanced(3));
         ct.insert(6, 1);
         assert_eq!(ct.get(6), Some(&1));
-        assert_eq!(ct.root().unwrap().rcount(), 4);
-        assert_eq!(ct.root().unwrap().balance_factor(), -1);
         assert_eq!(ct.root().unwrap().height, 3);
+        assert_eq!(compute_level(ct.root().unwrap(), 1), Level::Balanced(4));
     }
 
     #[test]
     fn from_iter() {
+        let ct: CountTree<_> = (0..63).collect();
+        let root = ct.root().unwrap();
+        assert_eq!(root.height, 5);
+        assert_eq!(compute_level(root, 0), Level::Balanced(6));
+
         let ct: CountTree<_> = (0..94).collect();
         let root = ct.root().unwrap();
-        assert_eq!(root.value(), &31);
         assert_eq!(root.balance_factor(), -1);
         assert_eq!(root.height, 6);
-        let left = root.left().unwrap();
-        assert_eq!(left.value(), &15);
-        assert_eq!(left.balance_factor(), 0);
-        assert_eq!(left.height, 4);
-        let right = root.right().unwrap();
-        assert_eq!(right.value(), &63);
-        assert_eq!(right.balance_factor(), 0);
-        assert_eq!(right.height, 5);
+        assert_eq!(compute_level(root, 1), Level::Balanced(7));
     }
 }

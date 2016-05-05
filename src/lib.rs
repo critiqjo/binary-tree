@@ -12,7 +12,7 @@ use std::ops::DerefMut;
 pub mod cow;
 pub mod count;
 pub mod iter;
-pub mod plain;
+pub mod test;
 pub mod unbox;
 
 pub trait BinaryTree {

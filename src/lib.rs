@@ -98,8 +98,9 @@ pub trait NodeMut: Node + Sized {
     }
 
     /// Walks down the tree by detaching subtrees, then up reattaching them back.
-    fn walk_mut<FF, FB>(&mut self, mut forth: FF, mut back: FB)
+    fn walk_mut<FF, FS, FB>(&mut self, mut forth: FF, stop: FS, mut back: FB)
         where FF: FnMut(&mut Self) -> WalkAction,
+              FS: FnOnce(&mut Self),
               FB: FnMut(&mut Self, WalkAction),
     {
         use WalkAction::*;
@@ -125,8 +126,8 @@ pub trait NodeMut: Node + Sized {
                 break;
             }
         }
-        if let Some((mut sst, action)) = stack.pop() {
-            back(&mut sst, action); // the final action is irrelevant
+        if let Some((mut sst, _)) = stack.pop() { // the final action is irrelevant
+            stop(&mut sst);
             while let Some((mut st, action)) = stack.pop() {
                 match action {
                     Left => st.insert_left(Some(sst)),
@@ -141,8 +142,10 @@ pub trait NodeMut: Node + Sized {
                 Right => self.insert_right(Some(sst)),
                 Stop => unreachable!(),
             };
+            back(self, root_action);
+        } else {
+            stop(self)
         }
-        back(self, root_action);
     }
 }
 

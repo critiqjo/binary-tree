@@ -123,11 +123,11 @@ mod tests {
             let mut step_iter = steps.drain(..);
             tt.walk_mut(|_| {
                 step_iter.next().unwrap()
-            }, |st, action| {
+            }, |st| assert_eq!(st.val, 25), |st, action| {
                 match action {
                     Right => assert_eq!(st.val, 20),
                     Left => assert_eq!(st.val, 30),
-                    Stop => assert_eq!(st.val, 25),
+                    Stop => unreachable!(),
                 }
             });
         }

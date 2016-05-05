@@ -12,6 +12,7 @@
 //! - You have less than 4.29 billion elements!
 
 use std::mem;
+use std::iter::FromIterator;
 
 use Node;
 use NodeMut;
@@ -101,7 +102,7 @@ impl<T> CountTree<T> {
     }
 
     // TODO ? clear, is_empty, iter_mut
-    // TODO { O(n) } truncate, append, split_off, impl FromIterator, retain
+    // TODO { O(n) } truncate, append, split_off, retain
 }
 
 impl<T> BinaryTree for CountTree<T> {
@@ -118,6 +119,76 @@ impl<T> Drop for CountTree<T> {
         let mut inner = None;
         mem::swap(&mut self.0, &mut inner);
         let _: GenIntoIter<CountNode<T>> = GenIntoIter::new(inner);
+    }
+}
+
+fn is_power(v: u32) -> bool {
+    if v == 0 {
+        false
+    } else {
+        v & (v - 1) == 0
+    }
+}
+
+fn exp_floor_log(v: u32) -> u32 {
+    if v == 0 || is_power(v) {
+        v
+    } else {
+        let mut efl = v - 1;
+        efl |= efl >> 1;
+        efl |= efl >> 2;
+        efl |= efl >> 4;
+        efl |= efl >> 8;
+        efl |= efl >> 16;
+        efl += 1;
+        efl >> 1
+    }
+}
+
+impl<T> FromIterator<T> for CountTree<T> {
+    /// Creates a balanced binary tree in O(n + log^2(n)) time
+    fn from_iter<I>(iterable: I) -> Self where I: IntoIterator<Item=T> {
+        use WalkAction::*;
+
+        let mut iter = iterable.into_iter();
+        if let Some(item) = iter.next() {
+            let mut node = Box::new(CountNode::new(item));
+            let mut count = 1;
+            while let Some(item) = iter.next() {
+                let mut new_node = Box::new(CountNode::new(item));
+                new_node.insert_left(Some(node));
+                node = new_node;
+                count += 1;
+                let rcount = if is_power(count + 1) {
+                    count >> 1
+                } else {
+                    count
+                };
+                let mut rotate_points = 1;
+                while rcount & rotate_points == rotate_points {
+                    node.rotate_right().unwrap();
+                    rotate_points <<= 1;
+                    rotate_points |= 1;
+                }
+            }
+            let balanced_till = exp_floor_log(count + 1) - 1;
+            count = node.lcount() + 1; // not needed
+            while count > balanced_till {
+                node.rotate_right().unwrap();
+                node.right.as_mut().unwrap().walk_mut(|node| {
+                    if node.balance_factor() > 1 {
+                        node.rotate_right().unwrap();
+                        Right
+                    } else {
+                        Stop
+                    }
+                }, |_| (), |_, _| ());
+                count = node.lcount() + 1;
+            }
+            CountTree(Some(node))
+        } else {
+            CountTree::new()
+        }
     }
 }
 
@@ -387,5 +458,54 @@ mod tests {
         ct.insert(7, 0);
         assert_eq!(ct.root().unwrap().balance_factor(), -1);
         assert_eq!(ct.get(7), Some(&0));
+    }
+
+    #[test]
+    fn from_iter() {
+        let ct: CountTree<_> = (0..94).collect();
+        let root = ct.root().unwrap();
+        assert_eq!(root.value(), &31);
+        assert_eq!(root.balance_factor(), -1);
+        let left = root.left().unwrap();
+        assert_eq!(left.value(), &15);
+        assert_eq!(left.balance_factor(), 0);
+        let right = root.right().unwrap();
+        assert_eq!(right.value(), &63);
+        assert_eq!(right.balance_factor(), 0);
+        {
+            let rl = right.left().unwrap();
+            assert_eq!(rl.value(), &47);
+            assert_eq!(rl.balance_factor(), 0);
+            let rr = right.right().unwrap();
+            assert_eq!(rr.value(), &79);
+            assert_eq!(rr.balance_factor(), 0);
+            {
+                let rrl = rr.left().unwrap();
+                assert_eq!(rrl.value(), &71);
+                assert_eq!(rrl.balance_factor(), 0);
+                let rrr = rr.right().unwrap();
+                assert_eq!(rrr.value(), &87);
+                assert_eq!(rrr.balance_factor(), 0);
+                {
+                    let rrrl = rrr.left().unwrap();
+                    assert_eq!(rrrl.value(), &83);
+                    assert_eq!(rrrl.balance_factor(), 0);
+                    let rrrr = rrr.right().unwrap();
+                    assert_eq!(rrrr.value(), &91);
+                    assert_eq!(rrrr.balance_factor(), 0);
+                    {
+                        let rrrrl = rrrr.left().unwrap();
+                        assert_eq!(rrrrl.value(), &89);
+                        assert_eq!(rrrrl.balance_factor(), 0);
+                        let rrrrr = rrrr.right().unwrap();
+                        assert_eq!(rrrrr.value(), &93);
+                        assert_eq!(rrrrr.balance_factor(), 1);
+                        let rrrrrl = rrrrr.left().unwrap();
+                        assert_eq!(rrrrrl.value(), &92);
+                        assert_eq!(rrrrrl.balance_factor(), 0);
+                    }
+                }
+            }
+        }
     }
 }

@@ -191,6 +191,25 @@ impl<T> CountNode<T> {
         }
     }
 
+    // AVL tree algorithm
+    fn rebalance(&mut self) {
+        if self.balance_factor() > 1 {
+            self.left.as_mut().map(|node| {
+                if node.balance_factor() < 0 {
+                    node.rotate_left();
+                }
+            });
+            self.rotate_right();
+        } else if self.balance_factor() < -1 {
+            self.right.as_mut().map(|node| {
+                if node.balance_factor() > 0 {
+                    node.rotate_right();
+                }
+            });
+            self.rotate_left();
+        }
+    }
+
     fn update_stats(&mut self) {
         use std::cmp::max;
         self.count = self.lcount() + self.rcount() + 1;
@@ -256,23 +275,45 @@ mod tests {
     use super::CountNode;
     use super::CountTree;
 
-    #[test]
-    fn counting() {
+    fn test_nodes() -> Box<CountNode<u32>> {
         let mut cn = Box::new(CountNode::new(7));
         let mut cn_l = Box::new(CountNode::new(8));
         cn_l.insert_right(Some(Box::new(CountNode::new(12))));
         cn.insert_left(Some(cn_l));
         cn.insert_right(Some(Box::new(CountNode::new(5))));
-        assert_eq!(cn.lcount(), 2);
-        assert_eq!(cn.rcount(), 1);
-        assert_eq!(cn.count, 4);
-        assert_eq!(cn.height, 2);
-        assert_eq!(cn.balance_factor(), 1);
-        let ct = CountTree(Some(cn));
+        cn
+    }
+
+    #[test]
+    fn basic() {
+        let ct = CountTree(Some(test_nodes()));
         assert_eq!(ct.get(0), Some(&8));
         assert_eq!(ct.get(1), Some(&12));
         assert_eq!(ct.get(2), Some(&7));
         assert_eq!(ct.get(3), Some(&5));
         assert_eq!(ct.get(4), None);
+    }
+
+    #[test]
+    fn counting() {
+        let cn = test_nodes();
+        assert_eq!(cn.lcount(), 2);
+        assert_eq!(cn.rcount(), 1);
+        assert_eq!(cn.count, 4);
+        assert_eq!(cn.height, 2);
+    }
+
+    #[test]
+    fn rebalance() {
+        let mut cn = test_nodes();
+        assert_eq!(cn.balance_factor(), 1);
+        cn.detach_right();
+        cn.rebalance();
+        assert_eq!(cn.balance_factor(), 0);
+        let ct = CountTree(Some(cn));
+        assert_eq!(ct.get(0), Some(&8));
+        assert_eq!(ct.get(1), Some(&12));
+        assert_eq!(ct.get(2), Some(&7));
+        assert_eq!(ct.get(3), None);
     }
 }

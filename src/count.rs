@@ -28,10 +28,13 @@ impl<T> CountTree<T> {
         CountTree(None)
     }
 
+    /// Returns the number elements in the tree. This is an O(1) operation.
     pub fn len(&self) -> usize {
         self.root().map_or(0, |node| node.count as usize)
     }
 
+    /// Returns the element at the given index, or `None` if index is out of
+    /// bounds. This is an O(log(n)) operation (worst case).
     pub fn get<'a>(&'a self, index: usize) -> Option<&'a T> {
         use WalkAction::*;
 
@@ -40,12 +43,12 @@ impl<T> CountTree<T> {
         } else {
             let mut val = None;
             let mut up_count = 0;
-            self.root().unwrap().walk(|cn: &'a CountNode<T>| {
-                let cur_index = cn.lcount() as usize + up_count;
+            self.root().unwrap().walk(|node: &'a CountNode<T>| {
+                let cur_index = node.lcount() as usize + up_count;
                 if index < cur_index {
                     Left
                 } else if index == cur_index {
-                    val = Some(cn.value());
+                    val = Some(node.value());
                     Stop
                 } else {
                     up_count = cur_index + 1;
@@ -196,17 +199,17 @@ impl<T> CountNode<T> {
         if self.balance_factor() > 1 {
             self.left.as_mut().map(|node| {
                 if node.balance_factor() < 0 {
-                    node.rotate_left();
+                    node.rotate_left().unwrap();
                 }
             });
-            self.rotate_right();
+            self.rotate_right().unwrap();
         } else if self.balance_factor() < -1 {
             self.right.as_mut().map(|node| {
                 if node.balance_factor() > 0 {
-                    node.rotate_right();
+                    node.rotate_right().unwrap();
                 }
             });
-            self.rotate_left();
+            self.rotate_left().unwrap();
         }
     }
 

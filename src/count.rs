@@ -37,9 +37,21 @@ impl<T> CountTree<T> {
         CountTree(None)
     }
 
+    /// Returns `true` if the tree contains no elements.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_none()
+    }
+
     /// Returns the number elements in the tree. Time complexity: O(1)
     pub fn len(&self) -> usize {
         self.root().map_or(0, |node| node.count as usize)
+    }
+
+    /// Clears the tree, dropping all values iteratively using `IntoIter`.
+    pub fn clear(&mut self) {
+        let mut inner = None;
+        mem::swap(&mut self.0, &mut inner);
+        let _: GenIntoIter<CountNode<T>> = GenIntoIter::new(inner);
     }
 
     /// Returns the element at the given index, or `None` if index is out of
@@ -109,7 +121,7 @@ impl<T> CountTree<T> {
         }
     }
 
-    // TODO ? clear, is_empty, iter_mut
+    // TODO ? iter_mut
     // TODO { O(n) } truncate, append, split_off, retain
 }
 
@@ -121,12 +133,9 @@ impl<T> BinaryTree for CountTree<T> {
     }
 }
 
-// prevent the unlikely event of stack overflow
 impl<T> Drop for CountTree<T> {
     fn drop(&mut self) {
-        let mut inner = None;
-        mem::swap(&mut self.0, &mut inner);
-        let _: GenIntoIter<CountNode<T>> = GenIntoIter::new(inner);
+        self.clear();
     }
 }
 

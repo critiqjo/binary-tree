@@ -1,11 +1,11 @@
-//! Counting trees.
+//! Counting tree implementation.
 //!
 //! ## When should you use CountTree?
 //!
 //! - You want to maintain a possibly large unsorted list.
 //! - You want to access, modify, insert, and delete elements at arbitrary
-//!   position with O(logn) time complexity.
-//! - You can tolerate O(n logn) time-complexity for:
+//!   position with O(log(n)) time complexity.
+//! - You can tolerate O(n log(n)) time-complexity for:
 //!   - splitting at arbitrary position
 //!   - truncating the length
 //!   - appending another list
@@ -22,20 +22,28 @@ use iter::IntoIter as GenIntoIter;
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
+/// Counting tree.
+///
+/// A balanced binary tree which keeps track of total number of child nodes in
+/// each node, so that elements can be inserted and deleted using its in-order
+/// index. The algorithm used internally is a (slightly inefficient) variation
+/// of [AVL Tree](https://en.wikipedia.org/wiki/AVL_tree). Time complexities
+/// mentioned are that of worst case scenario (same as that of an AVL tree).
 pub struct CountTree<T>(Option<NodePtr<T>>);
 
 impl<T> CountTree<T> {
+    /// Returns an empty `CountTree`
     pub fn new() -> CountTree<T> {
         CountTree(None)
     }
 
-    /// Returns the number elements in the tree. This is an O(1) operation.
+    /// Returns the number elements in the tree. Time complexity: O(1)
     pub fn len(&self) -> usize {
         self.root().map_or(0, |node| node.count as usize)
     }
 
     /// Returns the element at the given index, or `None` if index is out of
-    /// bounds. This is an O(log(n)) operation (worst case).
+    /// bounds. Time complexity: O(log(n))
     pub fn get<'a>(&'a self, index: usize) -> Option<&'a T> {
         use WalkAction::*;
 
@@ -61,11 +69,11 @@ impl<T> CountTree<T> {
         }
     }
 
-    // TODO get_mut
+    // TODO get_mut or mut_with
 
-    /// Inserts a value at the given index. This is an O(log(n)) operation (worst case).
+    /// Inserts a value at the given index. Time complexity: O(log(n))
     ///
-    /// # Panics
+    /// ## Panics
     ///
     /// Panics if index is greater than `self.len()`
     pub fn insert(&mut self, index: usize, value: T) {
@@ -146,7 +154,7 @@ fn exp_floor_log(v: u32) -> u32 {
 }
 
 impl<T> FromIterator<T> for CountTree<T> {
-    /// Creates a balanced binary tree in O(n + log^2(n)) time
+    /// Time complexity: O(n + log<sup>2</sup>(n))
     fn from_iter<I>(iterable: I) -> Self where I: IntoIterator<Item=T> {
         use WalkAction::*;
 
@@ -263,6 +271,12 @@ impl<T> Iterator for IntoIter<T> {
 
 impl<T> ExactSizeIterator for IntoIter<T> {}
 
+/// Node of a `CountTree`.
+///
+/// The only way of getting your hands on a `CountNode` is through
+/// [`CountTree::root()`][struct.CountTree.html#method.root] method which
+/// returns a shared reference to its root.  Thus `NodeMut` methods are not
+/// accessible to users.
 pub struct CountNode<T> {
     val: T,
     left: Option<NodePtr<T>>,
@@ -435,7 +449,6 @@ mod tests {
     fn insert() {
         let mut ct = CountTree::new();
         assert_eq!(ct.get(0), None);
-        ct.insert(0, 1);
         ct.insert(0, 2);
         ct.insert(0, 3);
         ct.insert(0, 4);
@@ -446,18 +459,20 @@ mod tests {
         assert_eq!(ct.get(2), Some(&4));
         assert_eq!(ct.get(3), Some(&3));
         assert_eq!(ct.get(4), Some(&2));
-        assert_eq!(ct.get(5), Some(&1));
-        assert_eq!(ct.root().unwrap().balance_factor(), 0);
-        assert_eq!(ct.root().unwrap().value(), &4);
+        assert_eq!(ct.root().unwrap().value(), &3);
         assert_eq!(ct.root().unwrap().left().unwrap().value(), &5);
         assert_eq!(ct.root().unwrap().right().unwrap().value(), &2);
+        assert_eq!(ct.root().unwrap().balance_factor(), 1);
         ct.insert(0, 7);
+        assert_eq!(ct.root().unwrap().lcount(), 2);
+        assert_eq!(ct.root().unwrap().rcount(), 3);
         assert_eq!(ct.root().unwrap().balance_factor(), 0);
-        assert_eq!(ct.root().unwrap().left().unwrap().value(), &6);
+        assert_eq!(ct.root().unwrap().height, 2);
+        ct.insert(6, 1);
         assert_eq!(ct.get(6), Some(&1));
-        ct.insert(7, 0);
+        assert_eq!(ct.root().unwrap().rcount(), 4);
         assert_eq!(ct.root().unwrap().balance_factor(), -1);
-        assert_eq!(ct.get(7), Some(&0));
+        assert_eq!(ct.root().unwrap().height, 3);
     }
 
     #[test]
@@ -466,46 +481,14 @@ mod tests {
         let root = ct.root().unwrap();
         assert_eq!(root.value(), &31);
         assert_eq!(root.balance_factor(), -1);
+        assert_eq!(root.height, 6);
         let left = root.left().unwrap();
         assert_eq!(left.value(), &15);
         assert_eq!(left.balance_factor(), 0);
+        assert_eq!(left.height, 4);
         let right = root.right().unwrap();
         assert_eq!(right.value(), &63);
         assert_eq!(right.balance_factor(), 0);
-        {
-            let rl = right.left().unwrap();
-            assert_eq!(rl.value(), &47);
-            assert_eq!(rl.balance_factor(), 0);
-            let rr = right.right().unwrap();
-            assert_eq!(rr.value(), &79);
-            assert_eq!(rr.balance_factor(), 0);
-            {
-                let rrl = rr.left().unwrap();
-                assert_eq!(rrl.value(), &71);
-                assert_eq!(rrl.balance_factor(), 0);
-                let rrr = rr.right().unwrap();
-                assert_eq!(rrr.value(), &87);
-                assert_eq!(rrr.balance_factor(), 0);
-                {
-                    let rrrl = rrr.left().unwrap();
-                    assert_eq!(rrrl.value(), &83);
-                    assert_eq!(rrrl.balance_factor(), 0);
-                    let rrrr = rrr.right().unwrap();
-                    assert_eq!(rrrr.value(), &91);
-                    assert_eq!(rrrr.balance_factor(), 0);
-                    {
-                        let rrrrl = rrrr.left().unwrap();
-                        assert_eq!(rrrrl.value(), &89);
-                        assert_eq!(rrrrl.balance_factor(), 0);
-                        let rrrrr = rrrr.right().unwrap();
-                        assert_eq!(rrrrr.value(), &93);
-                        assert_eq!(rrrrr.balance_factor(), 1);
-                        let rrrrrl = rrrrr.left().unwrap();
-                        assert_eq!(rrrrrl.value(), &92);
-                        assert_eq!(rrrrrl.balance_factor(), 0);
-                    }
-                }
-            }
-        }
+        assert_eq!(right.height, 5);
     }
 }

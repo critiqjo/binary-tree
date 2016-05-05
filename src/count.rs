@@ -280,9 +280,8 @@ mod tests {
 
     fn test_nodes() -> Box<CountNode<u32>> {
         let mut cn = Box::new(CountNode::new(7));
-        let mut cn_l = Box::new(CountNode::new(8));
-        cn_l.insert_right(Some(Box::new(CountNode::new(12))));
-        cn.insert_left(Some(cn_l));
+        cn.insert_before(Box::new(CountNode::new(8)), |_, _| ());
+        cn.insert_before(Box::new(CountNode::new(12)), |_, _| ());
         cn.insert_right(Some(Box::new(CountNode::new(5))));
         cn
     }

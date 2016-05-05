@@ -71,6 +71,27 @@ pub trait NodeMut: Node + Sized {
     /// Consume a Node and return its value
     fn value_owned(self) -> Self::Value;
 
+    /// Insert `new_node` in-order before `self`. `back` will be invoked for all
+    /// nodes in path from (excluding) the point of insertion, to (including)
+    /// `self`, unless `self` is the point of insertion.
+    fn insert_before<FB>(&mut self, new_node: Self::NodePtr, mut back: FB)
+        where FB: FnMut(&mut Self, WalkAction)
+    {
+        use WalkAction::*;
+
+        if let Some(mut left) = self.detach_left() {
+            left.walk_mut(|_| Right,
+                          move |node| {
+                              node.insert_right(Some(new_node));
+                          },
+                          &mut back);
+            self.insert_left(Some(left));
+            back(self, Left);
+        } else {
+            self.insert_left(Some(new_node));
+        }
+    }
+
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {
         if let Some(mut self2) = self.detach_right() {

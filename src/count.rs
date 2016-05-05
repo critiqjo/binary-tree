@@ -272,7 +272,7 @@ pub struct CountNode<T> {
 }
 
 impl<T> CountNode<T> {
-    pub fn new(val: T) -> CountNode<T> {
+    fn new(val: T) -> CountNode<T> {
         CountNode {
             val: val,
             left: None,

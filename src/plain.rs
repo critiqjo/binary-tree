@@ -13,9 +13,9 @@ use NodeMut;
 
 #[derive(Debug)]
 pub struct PlainTree<T> {
-    val: T,
-    left: Option<Box<PlainTree<T>>>,
-    right: Option<Box<PlainTree<T>>>,
+    pub val: T,
+    pub left: Option<Box<PlainTree<T>>>,
+    pub right: Option<Box<PlainTree<T>>>,
 }
 
 impl<T> PlainTree<T> {
@@ -84,13 +84,21 @@ mod tests {
     use Node;
     use NodeMut;
 
+    fn test_tree() -> PlainTree<u32> {
+        PlainTree {
+            val: 20,
+            left: Some(Box::new(PlainTree::new(10))),
+            right: Some(Box::new(PlainTree {
+                val: 30,
+                left: Some(Box::new(PlainTree::new(25))),
+                right: None,
+            })),
+        }
+    }
+
     #[test]
     fn rotate() {
-        let mut tt = PlainTree::new(20);
-        tt.insert_left(Some(Box::new(PlainTree::new(10))));
-        let mut tt_r = PlainTree::new(30);
-        tt_r.insert_left(Some(Box::new(PlainTree::new(25))));
-        tt.insert_right(Some(Box::new(tt_r)));
+        let mut tt = test_tree();
 
         tt.rotate_left().unwrap();
         assert_eq!(*tt.value(),                    30);
@@ -112,12 +120,7 @@ mod tests {
     fn walk() {
         use WalkAction::*;
 
-        let mut tt = PlainTree::new(20);
-        tt.insert_left(Some(Box::new(PlainTree::new(10))));
-        let mut tt_r = PlainTree::new(30);
-        tt_r.insert_left(Some(Box::new(PlainTree::new(25))));
-        tt.insert_right(Some(Box::new(tt_r)));
-
+        let mut tt = test_tree();
         let mut steps = vec![Right, Left, Stop];
         {
             let mut step_iter = steps.drain(..);

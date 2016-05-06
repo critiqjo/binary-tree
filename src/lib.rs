@@ -174,11 +174,38 @@ pub trait NodeMut: Node + Sized {
         }
     }
 
-    /// Replace this node with one of its descendant, returns `None` if it has no children.
+    /// Extract a node found by `finder`. This can be used in conjuction with
+    /// `try_remove` to remove any node except the root. See `CountTree::remove`
+    /// for an example implementation.
+    fn extract<FF, FE, FX>(&mut self, finder: FF, extractor: FE, mut exiter: FX) -> Option<Self::NodePtr>
+        where FF: FnMut(&mut Self) -> WalkAction,
+              FE: FnOnce(&mut Self, &mut Option<Self::NodePtr>),
+              FX: FnMut(&mut Self, WalkAction)
+    {
+        use WalkAction::*;
+
+        let ret = std::cell::RefCell::new(None);
+        self.walk_mut(finder,
+                      |node| extractor(node, &mut *ret.borrow_mut()),
+                      |node, action| {
+                          if ret.borrow().is_none() {
+                              // extract out the last visited node if extractor failed
+                              *ret.borrow_mut() = match action {
+                                  Left => node.detach_left(),
+                                  Right => node.detach_right(),
+                                  Stop => unreachable!(),
+                              };
+                          }
+                          exiter(node, action);
+                      });
+        ret.into_inner()
+    }
+
+    /// Replace this node with one of its descendant, returns `None` if it has
+    /// no children.
     fn try_remove<F>(&mut self, mut step_out: F) -> Option<Self::NodePtr>
         where F: FnMut(&mut Self, WalkAction)
     {
-        use std::cell::RefCell;
         use WalkAction::*;
 
         if let Some(mut left) = self.detach_left() {
@@ -186,38 +213,27 @@ pub trait NodeMut: Node + Sized {
                 mem::swap(&mut *left, self);
                 Some(left)
             } else {
-                let ret: RefCell<Option<_>> = RefCell::new(None);
-                // fetch the rightmost descendant of left into ret
-                left.walk_mut(|_| Right,
-                              |node| {
-                                  if let Some(mut left) = node.detach_left() {
-                                      // replace the rightmost node with its left child
-                                      mem::swap(&mut *left, node);
-                                      *ret.borrow_mut() = Some(left);
-                                  }
-                              },
-                              |node, action| {
-                                  if ret.borrow().is_none() {
-                                      *ret.borrow_mut() = match action {
-                                          Left => node.detach_left(),
-                                          Right => node.detach_right(),
-                                          Stop => unreachable!(),
-                                      };
-                                  }
-                                  step_out(node, action);
-                              });
-                let mut ret = ret.into_inner();
-                if let Some(ref mut ret) = ret {
-                    ret.insert_left(Some(left));
+                // fetch the rightmost descendant of left into pio (previous-in-order of self)
+                let mut pio = left.extract(|_| Right,
+                                           |node, ret| {
+                                               if let Some(mut left) = node.detach_left() {
+                                                   // the rightmost node has a left child
+                                                   mem::swap(&mut *left, node);
+                                                   *ret = Some(left);
+                                               }
+                                           },
+                                           &mut step_out);
+                if let Some(ref mut pio) = pio {
+                    pio.insert_left(Some(left));
                 } else {
                     // left had no right child
-                    ret = Some(left);
+                    pio = Some(left);
                 }
-                let mut ret = ret.unwrap();
-                ret.insert_right(self.detach_right());
-                mem::swap(&mut *ret, self);
-                step_out(self, Left);
-                Some(ret)
+                let mut pio = pio.unwrap();
+                pio.insert_right(self.detach_right());
+                step_out(&mut pio, Left);
+                mem::swap(&mut *pio, self);
+                Some(pio) // old self
             }
         } else if let Some(mut right) = self.detach_right() {
             mem::swap(&mut *right, self);

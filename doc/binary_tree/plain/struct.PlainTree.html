@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="generator" content="rustdoc">
+    <meta name="description" content="API documentation for the Rust `PlainTree` struct in crate `binary_tree`.">
+    <meta name="keywords" content="rust, rustlang, rust-lang, PlainTree">
+
+    <title>binary_tree::plain::PlainTree - Rust</title>
+
+    <link rel="stylesheet" type="text/css" href="../../rustdoc.css">
+    <link rel="stylesheet" type="text/css" href="../../main.css">
+    
+
+    
+    
+</head>
+<body class="rustdoc">
+    <!--[if lte IE 8]>
+    <div class="warning">
+        This old browser is unsupported and will most likely display funky
+        things.
+    </div>
+    <![endif]-->
+
+    
+
+    <nav class="sidebar">
+        
+        <p class='location'><a href='../index.html'>binary_tree</a>::<wbr><a href='index.html'>plain</a></p><script>window.sidebarCurrent = {name: 'PlainTree', ty: 'struct', relpath: ''};</script><script defer src="sidebar-items.js"></script>
+    </nav>
+
+    <nav class="sub">
+        <form class="search-form js-only">
+            <div class="search-container">
+                <input class="search-input" name="search"
+                       autocomplete="off"
+                       placeholder="Click or press ‘S’ to search, ‘?’ for more options…"
+                       type="search">
+            </div>
+        </form>
+    </nav>
+
+    <section id='main' class="content struct">
+<h1 class='fqn'><span class='in-band'>Struct <a href='../index.html'>binary_tree</a>::<wbr><a href='index.html'>plain</a>::<wbr><a class='struct' href=''>PlainTree</a></span><span class='out-of-band'><span id='render-detail'>
+                   <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
+                       [<span class='inner'>&#x2212;</span>]
+                   </a>
+               </span><a id='src-255' class='srclink' href='../../src/binary_tree/src/plain.rs.html#15-19' title='goto source code'>[src]</a></span></h1>
+<pre class='rust struct'>pub struct PlainTree&lt;T&gt; {
+    // some fields omitted
+}</pre><h2 id='methods'>Methods</h2><h3 class='impl'><code>impl&lt;T&gt; <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.new' class='method'><code>fn <a href='#method.new' class='fnname'>new</a>(val: T) -&gt; <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h4>
+</div><h2 id='implementations'>Trait Implementations</h2><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='../../binary_tree/trait.BinaryTree.html' title='binary_tree::BinaryTree'>BinaryTree</a> for <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='associatedtype.Node' class='type'><code>type <a href='../../binary_tree/trait.BinaryTree.html#associatedtype.Node' class='type'>Node</a> = <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h4>
+<h4 id='method.root' class='method'><code>fn <a href='../../binary_tree/trait.BinaryTree.html#tymethod.root' class='fnname'>root</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;Self::<a class='trait' href='../../binary_tree/trait.BinaryTree.html' title='binary_tree::BinaryTree'>Node</a>&gt;</code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='../../binary_tree/trait.Node.html' title='binary_tree::Node'>Node</a> for <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='associatedtype.Value' class='type'><code>type <a href='../../binary_tree/trait.Node.html#associatedtype.Value' class='type'>Value</a> = T</code></h4>
+<h4 id='method.left' class='method'><code>fn <a href='../../binary_tree/trait.Node.html#tymethod.left' class='fnname'>left</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;Self&gt;</code></h4>
+<h4 id='method.right' class='method'><code>fn <a href='../../binary_tree/trait.Node.html#tymethod.right' class='fnname'>right</a>(&amp;self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;&amp;Self&gt;</code></h4>
+<h4 id='method.value' class='method'><code>fn <a href='../../binary_tree/trait.Node.html#tymethod.value' class='fnname'>value</a>(&amp;self) -&gt; &amp;T</code></h4>
+<h4 id='method.walk' class='method'><code>fn <a href='../../binary_tree/trait.Node.html#method.walk' class='fnname'>walk</a>&lt;'a, F&gt;(&amp;'a self, forth: F) <span class='where'>where F: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;'a Self) -&gt; <a class='enum' href='../../binary_tree/enum.WalkAction.html' title='binary_tree::WalkAction'>WalkAction</a></span></code></h4>
+</div><h3 class='impl'><code>impl&lt;T&gt; <a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodeMut</a> for <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='associatedtype.NodePtr' class='type'><code>type <a href='../../binary_tree/trait.NodeMut.html#associatedtype.NodePtr' class='type'>NodePtr</a> = <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;<a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;&gt;</code></h4>
+<h4 id='method.detach_left' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#tymethod.detach_left' class='fnname'>detach_left</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodePtr</a>&gt;</code></h4>
+<h4 id='method.detach_right' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#tymethod.detach_right' class='fnname'>detach_right</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodePtr</a>&gt;</code></h4>
+<h4 id='method.insert_left' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#tymethod.insert_left' class='fnname'>insert_left</a>(&amp;mut self, st: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodePtr</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodePtr</a>&gt;</code></h4>
+<h4 id='method.insert_right' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#tymethod.insert_right' class='fnname'>insert_right</a>(&amp;mut self, st: <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodePtr</a>&gt;) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/option/enum.Option.html' title='core::option::Option'>Option</a>&lt;Self::<a class='trait' href='../../binary_tree/trait.NodeMut.html' title='binary_tree::NodeMut'>NodePtr</a>&gt;</code></h4>
+<h4 id='method.value_owned' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#tymethod.value_owned' class='fnname'>value_owned</a>(self) -&gt; T</code></h4>
+<h4 id='method.rotate_left' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#method.rotate_left' class='fnname'>rotate_left</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></h4>
+<h4 id='method.rotate_right' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#method.rotate_right' class='fnname'>rotate_right</a>(&amp;mut self) -&gt; <a class='enum' href='https://doc.rust-lang.org/nightly/core/result/enum.Result.html' title='core::result::Result'>Result</a>&lt;<a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>, <a class='primitive' href='https://doc.rust-lang.org/nightly/std/primitive.tuple.html'>()</a>&gt;</code></h4>
+<h4 id='method.walk_mut' class='method'><code>fn <a href='../../binary_tree/trait.NodeMut.html#method.walk_mut' class='fnname'>walk_mut</a>&lt;FF, FB&gt;(&amp;mut self, forth: FF, back: FB) <span class='where'>where FF: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;mut Self) -&gt; <a class='enum' href='../../binary_tree/enum.WalkAction.html' title='binary_tree::WalkAction'>WalkAction</a>, FB: <a class='trait' href='https://doc.rust-lang.org/nightly/core/ops/trait.FnMut.html' title='core::ops::FnMut'>FnMut</a>(&amp;mut Self, <a class='enum' href='../../binary_tree/enum.WalkAction.html' title='binary_tree::WalkAction'>WalkAction</a>)</span></code></h4>
+</div><h3 id='derived_implementations'>Derived Implementations </h3><h3 class='impl'><code>impl&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a>&gt; <a class='trait' href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html' title='core::fmt::Debug'>Debug</a> for <a class='struct' href='../../binary_tree/plain/struct.PlainTree.html' title='binary_tree::plain::PlainTree'>PlainTree</a>&lt;T&gt;</code></h3><div class='impl-items'><h4 id='method.fmt' class='method'><code>fn <a href='https://doc.rust-lang.org/nightly/core/fmt/trait.Debug.html#tymethod.fmt' class='fnname'>fmt</a>(&amp;self, __arg_0: &amp;mut <a class='struct' href='https://doc.rust-lang.org/nightly/core/fmt/struct.Formatter.html' title='core::fmt::Formatter'>Formatter</a>) -&gt; <a class='type' href='https://doc.rust-lang.org/nightly/core/fmt/type.Result.html' title='core::fmt::Result'>Result</a></code></h4>
+</div></section>
+    <section id='search' class="content hidden"></section>
+
+    <section class="footer"></section>
+
+    <aside id="help" class="hidden">
+        <div>
+            <h1 class="hidden">Help</h1>
+
+            <div class="shortcuts">
+                <h2>Keyboard Shortcuts</h2>
+
+                <dl>
+                    <dt>?</dt>
+                    <dd>Show this help dialog</dd>
+                    <dt>S</dt>
+                    <dd>Focus the search field</dd>
+                    <dt>&larrb;</dt>
+                    <dd>Move up in search results</dd>
+                    <dt>&rarrb;</dt>
+                    <dd>Move down in search results</dd>
+                    <dt>&#9166;</dt>
+                    <dd>Go to active search result</dd>
+                </dl>
+            </div>
+
+            <div class="infos">
+                <h2>Search Tricks</h2>
+
+                <p>
+                    Prefix searches with a type followed by a colon (e.g.
+                    <code>fn:</code>) to restrict the search to a given type.
+                </p>
+
+                <p>
+                    Accepted types are: <code>fn</code>, <code>mod</code>,
+                    <code>struct</code>, <code>enum</code>,
+                    <code>trait</code>, <code>type</code>, <code>macro</code>,
+                    and <code>const</code>.
+                </p>
+
+                <p>
+                    Search functions by type signature (e.g.
+                    <code>vec -> usize</code> or <code>* -> vec</code>)
+                </p>
+            </div>
+        </div>
+    </aside>
+
+    
+
+    <script>
+        window.rootPath = "../../";
+        window.currentCrate = "binary_tree";
+        window.playgroundUrl = "";
+    </script>
+    <script src="../../jquery.js"></script>
+    <script src="../../main.js"></script>
+    
+    <script defer src="../../search-index.js"></script>
+</body>
+</html>

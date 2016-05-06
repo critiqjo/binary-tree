@@ -1,0 +1,1 @@
+initSidebarItems({"enum":[["Level",""]],"fn":[["compute_level","Recursively calculate the level of this node and check whether it is balanced."]],"struct":[["TestNode","A minimal `Node` implementation."]]});

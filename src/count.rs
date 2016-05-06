@@ -23,6 +23,23 @@ use iter::IntoIter as GenIntoIter;
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
+macro_rules! index_walker {
+    ($index:ident, $node:ident, $up_count:ident, $stop:block) => {
+        {
+            let cur_index = $node.lcount() as usize + $up_count;
+            if $index < cur_index {
+                Left
+            } else if $index == cur_index {
+                $stop
+                Stop
+            } else {
+                $up_count = cur_index + 1;
+                Right
+            }
+        }
+    }
+}
+
 /// Counting tree.
 ///
 /// A balanced binary tree which keeps track of total number of child nodes in
@@ -66,16 +83,7 @@ impl<T> CountTree<T> {
             let mut val = None;
             let mut up_count = 0;
             self.root().unwrap().walk(|node: &'a CountNode<T>| {
-                let cur_index = node.lcount() as usize + up_count;
-                if index < cur_index {
-                    Left
-                } else if index == cur_index {
-                    val = Some(node.value());
-                    Stop
-                } else {
-                    up_count = cur_index + 1;
-                    Right
-                }
+                index_walker!(index, node, up_count, { val = Some(node.value()); })
             });
             assert!(val.is_some());
             val
@@ -97,17 +105,9 @@ impl<T> CountTree<T> {
             self.push_front(value);
         } else if index < len {
             let new_node = Box::new(CountNode::new(value));
-            let ref mut up_count = 0;
-            self.0.as_mut().unwrap().walk_mut(move |node| {
-                let cur_index = node.lcount() as usize + *up_count;
-                if index < cur_index {
-                    Left
-                } else if index == cur_index {
-                    Stop
-                } else {
-                    *up_count = cur_index + 1;
-                    Right
-                }
+            let mut up_count = 0;
+            self.0.as_mut().unwrap().walk_mut(|node| {
+                index_walker!(index, node, up_count, {})
             }, move |node| {
                 node.insert_before(new_node, |node, _| node.rebalance());
             }, |node, _| node.rebalance());

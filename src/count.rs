@@ -17,6 +17,7 @@ use std::iter::FromIterator;
 use Node;
 use NodeMut;
 use BinaryTree;
+use WalkAction;
 use iter::Iter as GenIter;
 use iter::IntoIter as GenIntoIter;
 
@@ -92,10 +93,10 @@ impl<T> CountTree<T> {
         use WalkAction::*;
 
         let len = self.len();
-        let new_node = Box::new(CountNode::new(value));
-        if len == 0 && index == 0 {
-            self.0 = Some(new_node);
+        if index == 0 {
+            self.push_front(value);
         } else if index < len {
+            let new_node = Box::new(CountNode::new(value));
             let ref mut up_count = 0;
             self.0.as_mut().unwrap().walk_mut(move |node| {
                 let cur_index = node.lcount() as usize + *up_count;
@@ -111,13 +112,33 @@ impl<T> CountTree<T> {
                 node.insert_before(new_node, |node, _| node.rebalance());
             }, |node, _| node.rebalance());
         } else if index == len {
-            self.0.as_mut().unwrap().walk_mut(|_| Right,
-                                              move |node| {
-                                                  node.insert_right(Some(new_node));
-                                              },
-                                              |node, _| node.rebalance());
+            self.push_back(value);
         } else {
             panic!("index out of bounds!");
+        }
+    }
+
+    /// Prepends an element at the beginning.
+    pub fn push_front(&mut self, value: T) {
+        let new_node = Box::new(CountNode::new(value));
+        if self.is_empty() {
+            self.0 = Some(new_node);
+        } else {
+            self.0.as_mut().unwrap().walk_mut(     |_|       WalkAction::Left,
+                                              move |node|  { node.insert_left(Some(new_node)); },
+                                                   |node, _| node.rebalance());
+        }
+    }
+
+    /// Appends an element at the end.
+    pub fn push_back(&mut self, value: T) {
+        let new_node = Box::new(CountNode::new(value));
+        if self.is_empty() {
+            self.0 = Some(new_node);
+        } else {
+            self.0.as_mut().unwrap().walk_mut(     |_|       WalkAction::Right,
+                                              move |node|  { node.insert_right(Some(new_node)); },
+                                                   |node, _| node.rebalance());
         }
     }
 

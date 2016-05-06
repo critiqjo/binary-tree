@@ -149,6 +149,31 @@ impl<T> CountTree<T> {
         }
     }
 
+    pub fn remove(&mut self, index: usize) -> T {
+        use WalkAction::*;
+
+        let len = self.len();
+        if index == 0 {
+            unimplemented!(); //self.pop_front();
+        } else if index < len {
+            let mut up_count = 0;
+            let root = self.0.as_mut().unwrap();
+            root.extract(|node| index_walker!(index, node, up_count, {}),
+                         |node, ret| {
+                             *ret = node.try_remove(|node, _| {
+                                 node.rebalance()
+                             });
+                         },
+                         |node, _| node.rebalance())
+                .unwrap()
+                .value_owned()
+        } else if index == len {
+            unimplemented!(); //self.pop_back();
+        } else {
+            panic!("index out of bounds!");
+        }
+    }
+
     // TODO ? iter_mut
     // TODO { O(n) } truncate, append, split_off, retain
 }
@@ -515,5 +540,14 @@ mod tests {
         assert_eq!(root.balance_factor(), -1);
         assert_eq!(root.height, 6);
         assert_eq!(compute_level(root, 1), Level::Balanced(7));
+    }
+
+    #[test]
+    fn remove() {
+        let mut ct: CountTree<_> = (0..94).collect();
+        for i in 0..20 {
+            assert_eq!(ct.remove(64), 64 + i);
+            assert!(compute_level(ct.root().unwrap(), 1).is_balanced());
+        }
     }
 }

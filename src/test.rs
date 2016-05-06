@@ -179,6 +179,22 @@ mod tests {
     }
 
     #[test]
+    fn remove() {
+        let mut tt = test_tree();
+        let tn = tt.right.as_mut().unwrap().try_remove(|_, _| ());
+        assert_eq!(tn.unwrap().value(), &30);
+        assert_eq!(tt.right.as_ref().unwrap().value(), &25);
+        let mut tt2 = test_tree();
+        {
+            let right = tt2.right.as_mut().unwrap();
+            right.right = Some(new_node(40));
+        }
+        let tn = tt2.right.as_mut().unwrap().try_remove(|_, _| ());
+        assert_eq!(tn.unwrap().value(), &30);
+        assert_eq!(tt.right.as_ref().unwrap().value(), &25);
+    }
+
+    #[test]
     fn stack_blow() {
         use iter::IntoIter;
         let mut pt = new_node(20);

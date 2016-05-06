@@ -169,6 +169,59 @@ pub trait NodeMut: Node + Sized {
             self.insert_left(Some(new_node));
         }
     }
+
+    /// Replace this node with one of its descendant, returns None if it has no children.
+    fn try_remove<FB>(&mut self, mut back: FB) -> Option<Self::NodePtr>
+        where FB: FnMut(&mut Self, WalkAction)
+    {
+        use std::cell::RefCell;
+        use WalkAction::*;
+
+        if let Some(mut left) = self.detach_left() {
+            if self.right().is_none() {
+                mem::swap(&mut *left, self);
+                Some(left)
+            } else {
+                let ret: RefCell<Option<_>> = RefCell::new(None);
+                // fetch the rightmost descendant of left into ret
+                left.walk_mut(|_| Right,
+                              |node| {
+                                  if let Some(mut left) = node.detach_left() {
+                                      // replace the rightmost node with its left child
+                                      mem::swap(&mut *left, node);
+                                      *ret.borrow_mut() = Some(left);
+                                  }
+                              },
+                              |node, action| {
+                                  if ret.borrow().is_none() {
+                                      *ret.borrow_mut() = match action {
+                                          Left => node.detach_left(),
+                                          Right => node.detach_right(),
+                                          Stop => unreachable!(),
+                                      };
+                                  }
+                                  back(node, action);
+                              });
+                let mut ret = ret.into_inner();
+                if let Some(ref mut ret) = ret {
+                    ret.insert_left(Some(left));
+                } else {
+                    // left had no right child
+                    ret = Some(left);
+                }
+                let mut ret = ret.unwrap();
+                ret.insert_right(self.detach_right());
+                mem::swap(&mut *ret, self);
+                back(self, Left);
+                Some(ret)
+            }
+        } else if let Some(mut right) = self.detach_right() {
+            mem::swap(&mut *right, self);
+            Some(right)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Clone, Copy, PartialEq)]

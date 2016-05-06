@@ -29,8 +29,12 @@ impl Level {
     }
 }
 
-/// `level = height + 1`. Implemented using recursion, so take care of the stack!
-/// `tolerance` is the difference in levels that is tolerated.
+/// Recursively calculate the level of this node and check whether it is
+/// balanced.
+///
+/// `level = height + 1`. Recursive, hence risk of stack blow up depending on
+/// the height of the tree! The node is considered balanced if, at every node,
+/// the difference in levels of the child nodes is not greater than `tolerance`.
 pub fn compute_level<N: Node>(node: &N, tolerance: u32) -> Level {
     use test::Level::*;
 

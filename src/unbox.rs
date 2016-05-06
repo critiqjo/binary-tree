@@ -1,7 +1,10 @@
+//! Pointer unboxing.
+
 use std::ptr;
 use std::rc::Rc;
 use std::sync::Arc;
 
+/// Trait specifying unboxing capability of a pointer type.
 pub trait Unbox<T: Sized> {
     fn unbox(self) -> T;
 }

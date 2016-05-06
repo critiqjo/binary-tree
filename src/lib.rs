@@ -245,8 +245,12 @@ pub trait NodeMut: Node + Sized {
 }
 
 #[derive(Clone, Copy, PartialEq)]
+/// List of actions taken during `Node::walk` or `NodeMut::walk_mut`.
 pub enum WalkAction {
+    /// Enter(ed) the left child
     Left,
+    /// Enter(ed) the right child
     Right,
+    /// Stop walking
     Stop,
 }

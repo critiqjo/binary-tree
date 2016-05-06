@@ -1,3 +1,7 @@
+//! Generic iterators.
+//!
+//! This module is not meant for the end-user.
+
 use Node;
 use NodeMut;
 use unbox::Unbox;

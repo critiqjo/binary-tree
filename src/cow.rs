@@ -1,3 +1,8 @@
+//! Copy-on-Write pointers.
+//!
+//! Thin wrappers around the standard library ref-counted pointers that clones
+//! on `DerefMut` if reference count is greater than 1.
+
 use std::ops::Deref;
 use std::ops::DerefMut;
 use std::rc::Rc;

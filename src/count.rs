@@ -5,11 +5,11 @@
 //! - You want to maintain a possibly large unsorted list.
 //! - You want to access, modify, insert, and delete elements at arbitrary
 //!   position with O(log(n)) time complexity.
-//! - You can tolerate O(n log(n)) time-complexity for:
+//! - You can tolerate O(n log(n)) time-complexity for (not implemented yet):
 //!   - splitting at arbitrary position
-//!   - truncating the length
-//!   - appending another list
-//! - You have less than 4.29 billion elements!
+//!   - truncating the length (complexity unclear)
+//!   - appending another list (complexity unclear)
+//! - You have less than 4.29 billion (`u32::MAX`) elements!
 
 use std::mem;
 use std::iter::FromIterator;
@@ -44,9 +44,36 @@ macro_rules! index_walker {
 ///
 /// A balanced binary tree which keeps track of total number of child nodes in
 /// each node, so that elements can be inserted and deleted using its in-order
-/// index. The algorithm used internally is a (slightly inefficient) variation
-/// of [AVL Tree](https://en.wikipedia.org/wiki/AVL_tree). Time complexities
-/// mentioned are that of worst case scenario (same as that of an AVL tree).
+/// index. The algorithm used internally is a variation of [AVL Tree][avlwiki].
+/// Time complexities mentioned below are that of worst case scenario (and are
+/// of the same order as that of an AVL tree).
+///
+/// [avlwiki]: https://en.wikipedia.org/wiki/AVL_tree
+///
+/// # Examples
+///
+/// ```rust
+/// # extern crate binary_tree;
+/// # use binary_tree::count::CountTree;
+/// # fn main() {
+/// let mut ct: CountTree<i32> = CountTree::new();
+/// ct.push_front(20);
+/// ct.push_front(10);
+/// assert_eq!(ct.pop_back().unwrap(), 20);
+/// # }
+/// ```
+///
+/// You can also use `collect` to create one from an iterator. This has a time
+/// complexity of O(n), which is much more efficient than inserting iteratively.
+///
+/// ```rust
+/// # extern crate binary_tree;
+/// # use binary_tree::count::CountTree;
+/// # fn main() {
+/// let mut ct: CountTree<i32> = (0..100).collect();
+/// assert_eq!(ct.remove(32), 32);
+/// # }
+/// ```
 pub struct CountTree<T>(Option<NodePtr<T>>);
 
 impl<T> CountTree<T> {
@@ -65,7 +92,7 @@ impl<T> CountTree<T> {
         self.root().map_or(0, |node| node.count as usize)
     }
 
-    /// Clears the tree, dropping all elements iteratively using `iter::IntoIter`.
+    /// Clears the tree, dropping all elements iteratively.
     pub fn clear(&mut self) {
         let mut inner = None;
         mem::swap(&mut self.0, &mut inner);
@@ -264,7 +291,7 @@ fn exp_floor_log(v: u32) -> u32 {
 }
 
 impl<T> FromIterator<T> for CountTree<T> {
-    /// Time complexity: O(n + log<sup>2</sup>(n))
+    /// Time complexity: &Theta;(n + log<sup>2</sup>(n))
     fn from_iter<I>(iterable: I) -> Self
         where I: IntoIterator<Item = T>
     {
@@ -388,7 +415,7 @@ impl<T> ExactSizeIterator for IntoIter<T> {}
 /// Node of a `CountTree`.
 ///
 /// The only way of getting your hands on a `CountNode` is through
-/// [`CountTree::root()`][struct.CountTree.html#method.root] method which
+/// [`CountTree::root()`](struct.CountTree.html#method.root) method which
 /// returns a shared reference to its root.  Thus `NodeMut` methods are not
 /// accessible to users.
 pub struct CountNode<T> {

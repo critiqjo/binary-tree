@@ -36,7 +36,7 @@ pub trait Node {
 
     /// Walk down the tree
     fn walk<'a, F>(&'a self, mut forth: F)
-        where F: FnMut(&'a Self) -> WalkAction,
+        where F: FnMut(&'a Self) -> WalkAction
     {
         use WalkAction::*;
 
@@ -54,7 +54,7 @@ pub trait Node {
 
 /// Mutating methods on a Binary Tree node.
 pub trait NodeMut: Node + Sized {
-    type NodePtr: Sized + DerefMut<Target=Self>;
+    type NodePtr: Sized + DerefMut<Target = Self>;
 
     /// Try to detach the left sub-tree
     fn detach_left(&mut self) -> Option<Self::NodePtr>;
@@ -70,27 +70,6 @@ pub trait NodeMut: Node + Sized {
 
     /// Consume a Node and return its value
     fn value_owned(self) -> Self::Value;
-
-    /// Insert `new_node` in-order before `self`. `back` will be invoked for all
-    /// nodes in path from (excluding) the point of insertion, to (including)
-    /// `self`, unless `self` is the point of insertion.
-    fn insert_before<FB>(&mut self, new_node: Self::NodePtr, mut back: FB)
-        where FB: FnMut(&mut Self, WalkAction)
-    {
-        use WalkAction::*;
-
-        if let Some(mut left) = self.detach_left() {
-            left.walk_mut(|_| Right,
-                          move |node| {
-                              node.insert_right(Some(new_node));
-                          },
-                          &mut back);
-            self.insert_left(Some(left));
-            back(self, Left);
-        } else {
-            self.insert_left(Some(new_node));
-        }
-    }
 
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {
@@ -122,7 +101,7 @@ pub trait NodeMut: Node + Sized {
     fn walk_mut<FF, FS, FB>(&mut self, mut forth: FF, stop: FS, mut back: FB)
         where FF: FnMut(&mut Self) -> WalkAction,
               FS: FnOnce(&mut Self),
-              FB: FnMut(&mut Self, WalkAction),
+              FB: FnMut(&mut Self, WalkAction)
     {
         use WalkAction::*;
 
@@ -147,7 +126,8 @@ pub trait NodeMut: Node + Sized {
                 break;
             }
         }
-        if let Some((mut sst, _)) = stack.pop() { // the final action is irrelevant
+        if let Some((mut sst, _)) = stack.pop() {
+            //               -^- the final action is irrelevant
             stop(&mut sst);
             while let Some((mut st, action)) = stack.pop() {
                 match action {
@@ -166,6 +146,27 @@ pub trait NodeMut: Node + Sized {
             back(self, root_action);
         } else {
             stop(self)
+        }
+    }
+
+    /// Insert `new_node` in-order before `self`. `back` will be invoked for all
+    /// nodes in path from (excluding) the point of insertion, to (including)
+    /// `self`, unless `self` is the point of insertion.
+    fn insert_before<FB>(&mut self, new_node: Self::NodePtr, mut back: FB)
+        where FB: FnMut(&mut Self, WalkAction)
+    {
+        use WalkAction::*;
+
+        if let Some(mut left) = self.detach_left() {
+            left.walk_mut(|_| Right,
+                          move |node| {
+                              node.insert_right(Some(new_node));
+                          },
+                          &mut back);
+            self.insert_left(Some(left));
+            back(self, Left);
+        } else {
+            self.insert_left(Some(new_node));
         }
     }
 }

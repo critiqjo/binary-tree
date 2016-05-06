@@ -23,7 +23,8 @@ impl Level {
 
     pub fn as_u32(self) -> u32 {
         match self {
-            Level::Balanced(e) | Level::Imbalanced(e) => e,
+            Level::Balanced(e) |
+            Level::Imbalanced(e) => e,
         }
     }
 }
@@ -120,13 +121,17 @@ mod tests {
     use Node;
     use NodeMut;
 
+    fn new_node<T>(val: T) -> Box<TestNode<T>> {
+        Box::new(TestNode::new(val))
+    }
+
     fn test_tree() -> TestNode<u32> {
         TestNode {
             val: 20,
-            left: Some(Box::new(TestNode::new(10))),
+            left: Some(new_node(10)),
             right: Some(Box::new(TestNode {
                 val: 30,
-                left: Some(Box::new(TestNode::new(25))),
+                left: Some(new_node(25)),
                 right: None,
             })),
         }
@@ -160,15 +165,15 @@ mod tests {
         let mut steps = vec![Right, Left, Stop];
         {
             let mut step_iter = steps.drain(..);
-            tt.walk_mut(|_| {
-                step_iter.next().unwrap()
-            }, |st| assert_eq!(st.val, 25), |st, action| {
-                match action {
-                    Right => assert_eq!(st.val, 20),
-                    Left => assert_eq!(st.val, 30),
-                    Stop => unreachable!(),
-                }
-            });
+            tt.walk_mut(|_| step_iter.next().unwrap(),
+                        |st| assert_eq!(st.val, 25),
+                        |st, action| {
+                            match action {
+                                Right => assert_eq!(st.val, 20),
+                                Left => assert_eq!(st.val, 30),
+                                Stop => unreachable!(),
+                            }
+                        });
         }
         assert_eq!(steps.len(), 0);
     }
@@ -176,9 +181,9 @@ mod tests {
     #[test]
     fn stack_blow() {
         use iter::IntoIter;
-        let mut pt = Box::new(TestNode::new(20));
+        let mut pt = new_node(20);
         for _ in 0..200000 {
-            let mut pt2 = Box::new(TestNode::new(20));
+            let mut pt2 = new_node(20);
             pt2.insert_left(Some(pt));
             pt = pt2;
         }

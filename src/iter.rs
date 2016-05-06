@@ -18,9 +18,7 @@ impl<'a, T> Iter<'a, T>
     where T: Node + 'a
 {
     pub fn new(root: Option<&'a T>) -> Iter<'a, T> {
-        Iter {
-            stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]),
-        }
+        Iter { stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]) }
     }
 }
 
@@ -59,9 +57,7 @@ impl<T> IntoIter<T>
           T::NodePtr: Unbox<T>
 {
     pub fn new(root: Option<T::NodePtr>) -> IntoIter<T> {
-        IntoIter {
-            stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]),
-        }
+        IntoIter { stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]) }
     }
 }
 
@@ -94,7 +90,7 @@ impl<T> Drop for IntoIter<T>
           T::NodePtr: Unbox<T>
 {
     fn drop(&mut self) {
-        while let Some(_) = self.next() {}
+        for _ in self {}
     }
 }
 

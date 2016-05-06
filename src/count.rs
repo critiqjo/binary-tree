@@ -1,6 +1,6 @@
 //! Counting tree implementation.
 //!
-//! ## When should you use CountTree?
+//! ## When should you use `CountTree`?
 //!
 //! - You want to maintain a possibly large unsorted list.
 //! - You want to access, modify, insert, and delete elements at arbitrary
@@ -83,7 +83,9 @@ impl<T> CountTree<T> {
             let mut val = None;
             let mut up_count = 0;
             self.root().unwrap().walk(|node: &'a CountNode<T>| {
-                index_walker!(index, node, up_count, { val = Some(node.value()); })
+                index_walker!(index, node, up_count, {
+                    val = Some(node.value());
+                })
             });
             assert!(val.is_some());
             val
@@ -106,11 +108,12 @@ impl<T> CountTree<T> {
         } else if index < len {
             let new_node = Box::new(CountNode::new(value));
             let mut up_count = 0;
-            self.0.as_mut().unwrap().walk_mut(|node| {
-                index_walker!(index, node, up_count, {})
-            }, move |node| {
-                node.insert_before(new_node, |node, _| node.rebalance());
-            }, |node, _| node.rebalance());
+            self.0.as_mut().unwrap().walk_mut(|node| index_walker!(index, node, up_count, {}),
+                                              move |node| {
+                                                  node.insert_before(new_node,
+                                                                     |node, _| node.rebalance());
+                                              },
+                                              |node, _| node.rebalance());
         } else if index == len {
             self.push_back(value);
         } else {
@@ -124,9 +127,11 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
-            self.0.as_mut().unwrap().walk_mut(     |_|       WalkAction::Left,
-                                              move |node|  { node.insert_left(Some(new_node)); },
-                                                   |node, _| node.rebalance());
+            self.0.as_mut().unwrap().walk_mut(|_| WalkAction::Left,
+                                              move |node| {
+                                                  node.insert_left(Some(new_node));
+                                              },
+                                              |node, _| node.rebalance());
         }
     }
 
@@ -136,9 +141,11 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
-            self.0.as_mut().unwrap().walk_mut(     |_|       WalkAction::Right,
-                                              move |node|  { node.insert_right(Some(new_node)); },
-                                                   |node, _| node.rebalance());
+            self.0.as_mut().unwrap().walk_mut(|_| WalkAction::Right,
+                                              move |node| {
+                                                  node.insert_right(Some(new_node));
+                                              },
+                                              |node, _| node.rebalance());
         }
     }
 
@@ -185,14 +192,16 @@ fn exp_floor_log(v: u32) -> u32 {
 
 impl<T> FromIterator<T> for CountTree<T> {
     /// Time complexity: O(n + log<sup>2</sup>(n))
-    fn from_iter<I>(iterable: I) -> Self where I: IntoIterator<Item=T> {
+    fn from_iter<I>(iterable: I) -> Self
+        where I: IntoIterator<Item = T>
+    {
         use WalkAction::*;
 
         let mut iter = iterable.into_iter();
         if let Some(item) = iter.next() {
             let mut node = Box::new(CountNode::new(item));
             let mut count = 1;
-            while let Some(item) = iter.next() {
+            for item in iter {
                 let mut new_node = Box::new(CountNode::new(item));
                 new_node.insert_left(Some(node));
                 node = new_node;
@@ -214,13 +223,15 @@ impl<T> FromIterator<T> for CountTree<T> {
             while count > balanced_till {
                 node.rotate_right().unwrap();
                 node.right.as_mut().unwrap().walk_mut(|node| {
-                    if node.balance_factor() > 1 {
-                        node.rotate_right().unwrap();
-                        Right
-                    } else {
-                        Stop
-                    }
-                }, |_| (), |_, _| ());
+                                                          if node.balance_factor() > 1 {
+                                                              node.rotate_right().unwrap();
+                                                              Right
+                                                          } else {
+                                                              Stop
+                                                          }
+                                                      },
+                                                      |_| (),
+                                                      |_, _| ());
                 count = node.lcount() + 1;
             }
             CountTree(Some(node))
@@ -336,16 +347,8 @@ impl<T> CountNode<T> {
 
     // generalized version of AVL tree balance factor: h(left) - h(right)
     fn balance_factor(&self) -> i32 {
-        if self.count == 1 {
-            0
-        } else if self.left.is_none() {
-            -1 - self.right.as_ref().unwrap().height as i32
-        } else if self.right.is_none() {
-            1 + self.left.as_ref().unwrap().height as i32
-        } else {
-            self.left.as_ref().unwrap().height as i32 -
-                self.right.as_ref().unwrap().height as i32
-        }
+        self.left.as_ref().map_or(-1, |node| node.height as i32) -
+            self.right.as_ref().map_or(-1, |node| node.height as i32)
     }
 
     // AVL tree algorithm

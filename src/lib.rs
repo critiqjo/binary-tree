@@ -35,14 +35,14 @@ pub trait Node {
     fn value(&self) -> &Self::Value;
 
     /// Walk down the tree
-    fn walk<'a, F>(&'a self, mut forth: F)
+    fn walk<'a, F>(&'a self, mut step_in: F)
         where F: FnMut(&'a Self) -> WalkAction
     {
         use WalkAction::*;
 
         let mut subtree = Some(self);
         while let Some(mut st) = subtree {
-            let action = forth(&mut st);
+            let action = step_in(&mut st);
             subtree = match action {
                 Left => st.left(),
                 Right => st.right(),
@@ -97,16 +97,20 @@ pub trait NodeMut: Node + Sized {
         }
     }
 
-    /// Walks down the tree by detaching subtrees, then up reattaching them back.
-    fn walk_mut<FF, FS, FB>(&mut self, mut forth: FF, stop: FS, mut back: FB)
-        where FF: FnMut(&mut Self) -> WalkAction,
+    /// Walks down the tree by detaching subtrees, then up reattaching them
+    /// back. `step_in` should guide the path taken, `stop` will be called on
+    /// the node where either `step_in` returned `Stop` or it was not possible
+    /// to proceed. Then `step_out` will be called for each node, except the
+    /// final one, along the way.
+    fn walk_mut<FI, FS, FO>(&mut self, mut step_in: FI, stop: FS, mut step_out: FO)
+        where FI: FnMut(&mut Self) -> WalkAction,
               FS: FnOnce(&mut Self),
-              FB: FnMut(&mut Self, WalkAction)
+              FO: FnMut(&mut Self, WalkAction)
     {
         use WalkAction::*;
 
         let mut stack = Vec::with_capacity(8);
-        let root_action = forth(self);
+        let root_action = step_in(self);
         let mut subtree = match root_action {
             Left => self.detach_left(),
             Right => self.detach_right(),
@@ -115,7 +119,7 @@ pub trait NodeMut: Node + Sized {
         let mut action = root_action;
         while action != Stop {
             if let Some(mut st) = subtree {
-                action = forth(&mut st);
+                action = step_in(&mut st);
                 subtree = match action {
                     Left => st.detach_left(),
                     Right => st.detach_right(),
@@ -135,7 +139,7 @@ pub trait NodeMut: Node + Sized {
                     Right => st.insert_right(Some(sst)),
                     Stop => unreachable!(),
                 };
-                back(&mut st, action);
+                step_out(&mut st, action);
                 sst = st;
             }
             match root_action {
@@ -143,17 +147,17 @@ pub trait NodeMut: Node + Sized {
                 Right => self.insert_right(Some(sst)),
                 Stop => unreachable!(),
             };
-            back(self, root_action);
+            step_out(self, root_action);
         } else {
             stop(self)
         }
     }
 
-    /// Insert `new_node` in-order before `self`. `back` will be invoked for all
-    /// nodes in path from (excluding) the point of insertion, to (including)
-    /// `self`, unless `self` is the point of insertion.
-    fn insert_before<FB>(&mut self, new_node: Self::NodePtr, mut back: FB)
-        where FB: FnMut(&mut Self, WalkAction)
+    /// Insert `new_node` in-order before `self`. `step_out` will be invoked for
+    /// all nodes in path from (excluding) the point of insertion, to
+    /// (including) `self`, unless `self` is the point of insertion.
+    fn insert_before<F>(&mut self, new_node: Self::NodePtr, mut step_out: F)
+        where F: FnMut(&mut Self, WalkAction)
     {
         use WalkAction::*;
 
@@ -162,17 +166,17 @@ pub trait NodeMut: Node + Sized {
                           move |node| {
                               node.insert_right(Some(new_node));
                           },
-                          &mut back);
+                          &mut step_out);
             self.insert_left(Some(left));
-            back(self, Left);
+            step_out(self, Left);
         } else {
             self.insert_left(Some(new_node));
         }
     }
 
-    /// Replace this node with one of its descendant, returns None if it has no children.
-    fn try_remove<FB>(&mut self, mut back: FB) -> Option<Self::NodePtr>
-        where FB: FnMut(&mut Self, WalkAction)
+    /// Replace this node with one of its descendant, returns `None` if it has no children.
+    fn try_remove<F>(&mut self, mut step_out: F) -> Option<Self::NodePtr>
+        where F: FnMut(&mut Self, WalkAction)
     {
         use std::cell::RefCell;
         use WalkAction::*;
@@ -200,7 +204,7 @@ pub trait NodeMut: Node + Sized {
                                           Stop => unreachable!(),
                                       };
                                   }
-                                  back(node, action);
+                                  step_out(node, action);
                               });
                 let mut ret = ret.into_inner();
                 if let Some(ref mut ret) = ret {
@@ -212,7 +216,7 @@ pub trait NodeMut: Node + Sized {
                 let mut ret = ret.unwrap();
                 ret.insert_right(self.detach_right());
                 mem::swap(&mut *ret, self);
-                back(self, Left);
+                step_out(self, Left);
                 Some(ret)
             }
         } else if let Some(mut right) = self.detach_right() {

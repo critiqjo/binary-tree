@@ -18,9 +18,7 @@ impl<'a, T> Iter<'a, T>
     where T: Node + 'a
 {
     pub fn new(root: Option<&'a T>) -> Iter<'a, T> {
-        Iter {
-            stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]),
-        }
+        Iter { stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]) }
     }
 }
 
@@ -59,9 +57,7 @@ impl<T> IntoIter<T>
           T::NodePtr: Unbox<T>
 {
     pub fn new(root: Option<T::NodePtr>) -> IntoIter<T> {
-        IntoIter {
-            stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]),
-        }
+        IntoIter { stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]) }
     }
 }
 
@@ -94,31 +90,31 @@ impl<T> Drop for IntoIter<T>
           T::NodePtr: Unbox<T>
 {
     fn drop(&mut self) {
-        while let Some(_) = self.next() {}
+        for _ in self {}
     }
 }
 
 #[cfg(test)]
 mod tests {
     use NodeMut;
-    use count::CountNode;
+    use test::TestNode;
     use super::Iter;
     use super::IntoIter;
 
     #[test]
     fn iteration() {
-        let mut ct = Box::new(CountNode::new(7u64));
-        let mut ct_l = Box::new(CountNode::new(8));
-        ct_l.insert_right(Some(Box::new(CountNode::new(12))));
+        let mut ct = Box::new(TestNode::new(7));
+        let mut ct_l = Box::new(TestNode::new(8));
+        ct_l.insert_right(Some(Box::new(TestNode::new(12))));
         ct.insert_left(Some(ct_l));
-        ct.insert_right(Some(Box::new(CountNode::new(5))));
+        ct.insert_right(Some(Box::new(TestNode::new(5))));
 
         {
             let vals: Vec<_> = Iter::new(Some(&*ct)).collect();
             assert_eq!(vals, [&8, &12, &7, &5]);
         }
 
-        let node_mi: IntoIter<CountNode<_>> = IntoIter::new(Some(ct));
+        let node_mi: IntoIter<TestNode<_>> = IntoIter::new(Some(ct));
         let vals: Vec<_> = node_mi.collect();
         assert_eq!(vals, [8, 12, 7, 5]);
     }

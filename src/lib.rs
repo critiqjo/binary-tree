@@ -12,7 +12,7 @@ use std::ops::DerefMut;
 pub mod cow;
 pub mod count;
 pub mod iter;
-pub mod plain;
+pub mod test;
 pub mod unbox;
 
 pub trait BinaryTree {
@@ -35,14 +35,14 @@ pub trait Node {
     fn value(&self) -> &Self::Value;
 
     /// Walk down the tree
-    fn walk<'a, F>(&'a self, mut forth: F)
-        where F: FnMut(&'a Self) -> WalkAction,
+    fn walk<'a, F>(&'a self, mut step_in: F)
+        where F: FnMut(&'a Self) -> WalkAction
     {
         use WalkAction::*;
 
         let mut subtree = Some(self);
         while let Some(mut st) = subtree {
-            let action = forth(&mut st);
+            let action = step_in(&mut st);
             subtree = match action {
                 Left => st.left(),
                 Right => st.right(),
@@ -54,7 +54,7 @@ pub trait Node {
 
 /// Mutating methods on a Binary Tree node.
 pub trait NodeMut: Node + Sized {
-    type NodePtr: Sized + DerefMut<Target=Self>;
+    type NodePtr: Sized + DerefMut<Target = Self>;
 
     /// Try to detach the left sub-tree
     fn detach_left(&mut self) -> Option<Self::NodePtr>;
@@ -97,15 +97,20 @@ pub trait NodeMut: Node + Sized {
         }
     }
 
-    /// Walks down the tree by detaching subtrees, then up reattaching them back.
-    fn walk_mut<FF, FB>(&mut self, mut forth: FF, mut back: FB)
-        where FF: FnMut(&mut Self) -> WalkAction,
-              FB: FnMut(&mut Self, WalkAction),
+    /// Walks down the tree by detaching subtrees, then up reattaching them
+    /// back. `step_in` should guide the path taken, `stop` will be called on
+    /// the node where either `step_in` returned `Stop` or it was not possible
+    /// to proceed. Then `step_out` will be called for each node, except the
+    /// final one, along the way.
+    fn walk_mut<FI, FS, FO>(&mut self, mut step_in: FI, stop: FS, mut step_out: FO)
+        where FI: FnMut(&mut Self) -> WalkAction,
+              FS: FnOnce(&mut Self),
+              FO: FnMut(&mut Self, WalkAction)
     {
         use WalkAction::*;
 
         let mut stack = Vec::with_capacity(8);
-        let root_action = forth(self);
+        let root_action = step_in(self);
         let mut subtree = match root_action {
             Left => self.detach_left(),
             Right => self.detach_right(),
@@ -114,7 +119,7 @@ pub trait NodeMut: Node + Sized {
         let mut action = root_action;
         while action != Stop {
             if let Some(mut st) = subtree {
-                action = forth(&mut st);
+                action = step_in(&mut st);
                 subtree = match action {
                     Left => st.detach_left(),
                     Right => st.detach_right(),
@@ -125,15 +130,16 @@ pub trait NodeMut: Node + Sized {
                 break;
             }
         }
-        if let Some((mut sst, action)) = stack.pop() {
-            back(&mut sst, action); // the final action is irrelevant
+        if let Some((mut sst, _)) = stack.pop() {
+            //               -^- the final action is irrelevant
+            stop(&mut sst);
             while let Some((mut st, action)) = stack.pop() {
                 match action {
                     Left => st.insert_left(Some(sst)),
                     Right => st.insert_right(Some(sst)),
                     Stop => unreachable!(),
                 };
-                back(&mut st, action);
+                step_out(&mut st, action);
                 sst = st;
             }
             match root_action {
@@ -141,8 +147,100 @@ pub trait NodeMut: Node + Sized {
                 Right => self.insert_right(Some(sst)),
                 Stop => unreachable!(),
             };
+            step_out(self, root_action);
+        } else {
+            stop(self)
         }
-        back(self, root_action);
+    }
+
+    /// Insert `new_node` in-order before `self`. `step_out` will be invoked for
+    /// all nodes in path from (excluding) the point of insertion, to
+    /// (including) `self`, unless `self` is the point of insertion.
+    fn insert_before<F>(&mut self, new_node: Self::NodePtr, mut step_out: F)
+        where F: FnMut(&mut Self, WalkAction)
+    {
+        use WalkAction::*;
+
+        if let Some(mut left) = self.detach_left() {
+            left.walk_mut(|_| Right,
+                          move |node| {
+                              node.insert_right(Some(new_node));
+                          },
+                          &mut step_out);
+            self.insert_left(Some(left));
+            step_out(self, Left);
+        } else {
+            self.insert_left(Some(new_node));
+        }
+    }
+
+    /// Extract a node found by `finder`. This can be used in conjuction with
+    /// `try_remove` to remove any node except the root. See `CountTree::remove`
+    /// for an example implementation.
+    fn extract<FF, FE, FX>(&mut self, finder: FF, extractor: FE, mut exiter: FX) -> Option<Self::NodePtr>
+        where FF: FnMut(&mut Self) -> WalkAction,
+              FE: FnOnce(&mut Self, &mut Option<Self::NodePtr>),
+              FX: FnMut(&mut Self, WalkAction)
+    {
+        use WalkAction::*;
+
+        let ret = std::cell::RefCell::new(None);
+        self.walk_mut(finder,
+                      |node| extractor(node, &mut *ret.borrow_mut()),
+                      |node, action| {
+                          if ret.borrow().is_none() {
+                              // extract out the last visited node if extractor failed
+                              *ret.borrow_mut() = match action {
+                                  Left => node.detach_left(),
+                                  Right => node.detach_right(),
+                                  Stop => unreachable!(),
+                              };
+                          }
+                          exiter(node, action);
+                      });
+        ret.into_inner()
+    }
+
+    /// Replace this node with one of its descendant, returns `None` if it has
+    /// no children.
+    fn try_remove<F>(&mut self, mut step_out: F) -> Option<Self::NodePtr>
+        where F: FnMut(&mut Self, WalkAction)
+    {
+        use WalkAction::*;
+
+        if let Some(mut left) = self.detach_left() {
+            if self.right().is_none() {
+                mem::swap(&mut *left, self);
+                Some(left)
+            } else {
+                // fetch the rightmost descendant of left into pio (previous-in-order of self)
+                let mut pio = left.extract(|_| Right,
+                                           |node, ret| {
+                                               if let Some(mut left) = node.detach_left() {
+                                                   // the rightmost node has a left child
+                                                   mem::swap(&mut *left, node);
+                                                   *ret = Some(left);
+                                               }
+                                           },
+                                           &mut step_out);
+                if let Some(ref mut pio) = pio {
+                    pio.insert_left(Some(left));
+                } else {
+                    // left had no right child
+                    pio = Some(left);
+                }
+                let mut pio = pio.unwrap();
+                pio.insert_right(self.detach_right());
+                step_out(&mut pio, Left);
+                mem::swap(&mut *pio, self);
+                Some(pio) // old self
+            }
+        } else if let Some(mut right) = self.detach_right() {
+            mem::swap(&mut *right, self);
+            Some(right)
+        } else {
+            None
+        }
     }
 }
 

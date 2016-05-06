@@ -65,7 +65,7 @@ impl<T> CountTree<T> {
         self.root().map_or(0, |node| node.count as usize)
     }
 
-    /// Clears the tree, dropping all values iteratively using `IntoIter`.
+    /// Clears the tree, dropping all elements iteratively using `iter::IntoIter`.
     pub fn clear(&mut self) {
         let mut inner = None;
         mem::swap(&mut self.0, &mut inner);
@@ -94,7 +94,7 @@ impl<T> CountTree<T> {
 
     // TODO get_mut or mut_with
 
-    /// Inserts a value at the given index. Time complexity: O(log(n))
+    /// Inserts an element at the given index. Time complexity: O(log(n))
     ///
     /// ## Panics
     ///
@@ -149,13 +149,18 @@ impl<T> CountTree<T> {
         }
     }
 
+    /// Removes the element at the given index. Time complexity: O(log(n))
+    ///
+    /// ## Panics
+    ///
+    /// Panics if index is out of bounds.
     pub fn remove(&mut self, index: usize) -> T {
         use WalkAction::*;
 
         let len = self.len();
         if index == 0 {
-            unimplemented!(); //self.pop_front();
-        } else if index < len {
+            self.pop_front().expect("Tree is empty!")
+        } else if index + 1 < len {
             let mut up_count = 0;
             let root = self.0.as_mut().unwrap();
             root.extract(|node| index_walker!(index, node, up_count, {}),
@@ -167,10 +172,53 @@ impl<T> CountTree<T> {
                          |node, _| node.rebalance())
                 .unwrap()
                 .value_owned()
-        } else if index == len {
-            unimplemented!(); //self.pop_back();
+        } else if index + 1 == len {
+            self.pop_back().unwrap()
         } else {
             panic!("index out of bounds!");
+        }
+    }
+
+    /// Removes and returns the first element, or `None` if empty.
+    pub fn pop_front(&mut self) -> Option<T> {
+        if self.is_empty() {
+            None
+        } else if self.len() == 1 {
+            Some(self.0.take().unwrap().value_owned())
+        } else {
+            let root = self.0.as_mut().unwrap();
+            Some(root.extract(|_| WalkAction::Left,
+                              |node, ret| {
+                                  if let Some(mut right) = node.detach_right() {
+                                      mem::swap(&mut *right, node);
+                                      *ret = Some(right);
+                                  }
+                              },
+                              |node, _| node.rebalance())
+                     .unwrap()
+                     .value_owned())
+        }
+    }
+
+    /// Removes and returns the last element, or `None` if empty.
+    pub fn pop_back(&mut self) -> Option<T> {
+        // FIXME Ewww! Code duplication!
+        if self.is_empty() {
+            None
+        } else if self.len() == 1 {
+            Some(self.0.take().unwrap().value_owned())
+        } else {
+            let root = self.0.as_mut().unwrap();
+            Some(root.extract(|_| WalkAction::Right,
+                              |node, ret| {
+                                  if let Some(mut left) = node.detach_left() {
+                                      mem::swap(&mut *left, node);
+                                      *ret = Some(left);
+                                  }
+                              },
+                              |node, _| node.rebalance())
+                     .unwrap()
+                     .value_owned())
         }
     }
 

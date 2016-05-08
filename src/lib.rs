@@ -21,6 +21,14 @@ pub trait BinaryTree {
     fn root(&self) -> Option<&Self::Node>;
 }
 
+unsafe fn borrow<'a, T, U>(raw: *const T, _: &'a U) -> &'a T {
+    &*raw
+}
+
+unsafe fn borrow_mut<'a, T, U>(raw: *mut T, _: &'a U) -> &'a mut T {
+    &mut *raw
+}
+
 /// Generic methods for traversing a binary tree.
 pub trait Node {
     type Value;
@@ -71,6 +79,12 @@ pub trait NodeMut: Node + Sized {
     /// Consume a Node and return its value
     fn value_owned(self) -> Self::Value;
 
+    /// Returns a mutable reference to the left child
+    fn left_mut<'a>(&'a mut self) -> Option<&'a mut Self>;
+
+    /// Returns a mutable reference to the right child
+    fn right_mut<'a>(&'a mut self) -> Option<&'a mut Self>;
+
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {
         if let Some(mut self2) = self.detach_right() {
@@ -95,6 +109,38 @@ pub trait NodeMut: Node + Sized {
         } else {
             Err(())
         }
+    }
+
+    /// Simple mutable walk
+    ///
+    /// Note that the type of `step_in` is almost identical to that in
+    /// `Node::walk`, but not exactly so. Here, `step_in` does not get a
+    /// reference which lives as long as `self` so that it cannot leak
+    /// references out to its environment.
+    fn walk_mut_simple<'a, FI, FS>(&'a mut self, mut step_in: FI, stop: FS)
+        where FI: FnMut(&Self) -> WalkAction,
+              FS: FnOnce(&'a mut Self)
+    {
+        use WalkAction::*;
+
+        let mut node: *mut _ = self;
+        loop {
+            let action = {
+                let pin = ();
+                step_in(unsafe { borrow(node, &pin) })
+            };
+            let next = match action {
+                Left => unsafe { borrow_mut(node, self) }.left_mut(),
+                Right => unsafe { borrow_mut(node, self) }.right_mut(),
+                Stop => break,
+            };
+            if let Some(st) = next {
+                node = st;
+            } else {
+                break;
+            }
+        }
+        stop(unsafe { borrow_mut(node, self) });
     }
 
     /// Walks down the tree by detaching subtrees, then up reattaching them

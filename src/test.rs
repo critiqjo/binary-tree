@@ -117,6 +117,14 @@ impl<T> NodeMut for TestNode<T> {
     fn value_owned(self) -> T {
         self.val
     }
+
+    fn left_mut<'a>(&'a mut self) -> Option<&'a mut Self> {
+        self.left.as_mut().map(|l| &mut **l)
+    }
+
+    fn right_mut<'a>(&'a mut self) -> Option<&'a mut Self> {
+        self.right.as_mut().map(|r| &mut **r)
+    }
 }
 
 #[cfg(test)]

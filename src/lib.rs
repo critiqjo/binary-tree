@@ -2,9 +2,9 @@
 //!
 //! ## Terminology
 //!
-//! * The root of a tree is considered to be at the _top_.
-//! * _Height_ of a node is the length of the longest path to _its_ leaves.
-//!   Height of a leaf node is defined to be zero.
+//! * The root of a tree is considered to be at the top.
+//! * Height of a node is the length of the longest path to _its_ leaves. Thus
+//!   all leaf nodes have zero height.
 
 use std::mem;
 use std::ops::DerefMut;

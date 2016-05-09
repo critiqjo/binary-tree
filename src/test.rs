@@ -181,15 +181,15 @@ mod tests {
         let mut steps = vec![Right, Left, Stop];
         {
             let mut step_iter = steps.drain(..);
-            tt.walk_mut(|_| step_iter.next().unwrap(),
-                        |st| assert_eq!(st.val, 25),
-                        |st, action| {
-                            match action {
-                                Right => assert_eq!(st.val, 20),
-                                Left => assert_eq!(st.val, 30),
-                                Stop => unreachable!(),
-                            }
-                        });
+            tt.walk_reshape(|_| step_iter.next().unwrap(),
+                            |st| assert_eq!(st.val, 25),
+                            |st, action| {
+                                match action {
+                                    Right => assert_eq!(st.val, 20),
+                                    Left => assert_eq!(st.val, 30),
+                                    Stop => unreachable!(),
+                                }
+                            });
         }
         assert_eq!(steps.len(), 0);
     }

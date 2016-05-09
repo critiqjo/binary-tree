@@ -6,14 +6,14 @@
 //! * _Height_ of a node is the length of the longest path to _its_ leaves.
 //!   Height of a leaf node is defined to be zero.
 
-use std::mem;
-use std::ops::DerefMut;
-
 pub mod cow;
 pub mod count;
 pub mod iter;
 pub mod test;
 pub mod unbox;
+
+use std::mem;
+use std::ops::DerefMut;
 
 pub trait BinaryTree {
     type Node: Node;
@@ -120,7 +120,7 @@ pub trait NodeMut: Node + Sized {
     /// `Node::walk`, but not exactly so. Here, `step_in` does not get a
     /// reference which lives as long as `self` so that it cannot leak
     /// references out to its environment.
-    fn walk_mut_simple<'a, FI, FS>(&'a mut self, mut step_in: FI, stop: FS)
+    fn walk_mut<'a, FI, FS>(&'a mut self, mut step_in: FI, stop: FS)
         where FI: FnMut(&Self) -> WalkAction,
               FS: FnOnce(&'a mut Self)
     {
@@ -149,9 +149,9 @@ pub trait NodeMut: Node + Sized {
     /// Walks down the tree by detaching subtrees, then up reattaching them
     /// back. `step_in` should guide the path taken, `stop` will be called on
     /// the node where either `step_in` returned `Stop` or it was not possible
-    /// to proceed. Then `step_out` will be called for each node, except the
-    /// final one, along the way.
-    fn walk_mut<FI, FS, FO>(&mut self, mut step_in: FI, stop: FS, mut step_out: FO)
+    /// to proceed. Then `step_out` will be called for each node along the way
+    /// to root, except the final one (that for which `stop` was called).
+    fn walk_reshape<FI, FS, FO>(&mut self, mut step_in: FI, stop: FS, mut step_out: FO)
         where FI: FnMut(&mut Self) -> WalkAction,
               FS: FnOnce(&mut Self),
               FO: FnMut(&mut Self, WalkAction)
@@ -211,11 +211,11 @@ pub trait NodeMut: Node + Sized {
         use WalkAction::*;
 
         if let Some(mut left) = self.detach_left() {
-            left.walk_mut(|_| Right,
-                          move |node| {
-                              node.insert_right(Some(new_node));
-                          },
-                          &mut step_out);
+            left.walk_reshape(|_| Right,
+                              move |node| {
+                                  node.insert_right(Some(new_node));
+                              },
+                              &mut step_out);
             self.insert_left(Some(left));
             step_out(self, Left);
         } else {
@@ -223,30 +223,39 @@ pub trait NodeMut: Node + Sized {
         }
     }
 
-    /// Extract a node found by `finder`. This can be used in conjuction with
-    /// `try_remove` to remove any node except the root. See `CountTree::remove`
-    /// for an example implementation.
-    fn extract<FF, FE, FX>(&mut self, finder: FF, extractor: FE, mut exiter: FX) -> Option<Self::NodePtr>
-        where FF: FnMut(&mut Self) -> WalkAction,
+    /// Extract out a node. This can be used in conjuction with `try_remove` to
+    /// remove any node except the root.
+    ///
+    /// The closure `extract` should try to take out the desired node from its
+    /// first argument and move it to its second argument (possibly using
+    /// `try_remove`). If it was unable to do it, the final node that was
+    /// visited will be taken out and returned, unless it is the root itself.
+    ///
+    /// Note that, similar to `walk_reshape`, `step_out` is not called for the
+    /// finally visited node (that for which `extract` was called).
+    ///
+    /// See the source of `CountTree::remove` for an example use.
+    fn walk_extract<FI, FE, FO>(&mut self, step_in: FI, extract: FE, mut step_out: FO) -> Option<Self::NodePtr>
+        where FI: FnMut(&mut Self) -> WalkAction,
               FE: FnOnce(&mut Self, &mut Option<Self::NodePtr>),
-              FX: FnMut(&mut Self, WalkAction)
+              FO: FnMut(&mut Self, WalkAction)
     {
         use WalkAction::*;
 
         let ret = std::cell::RefCell::new(None);
-        self.walk_mut(finder,
-                      |node| extractor(node, &mut *ret.borrow_mut()),
-                      |node, action| {
-                          if ret.borrow().is_none() {
-                              // extract out the last visited node if extractor failed
-                              *ret.borrow_mut() = match action {
-                                  Left => node.detach_left(),
-                                  Right => node.detach_right(),
-                                  Stop => unreachable!(),
-                              };
-                          }
-                          exiter(node, action);
-                      });
+        self.walk_reshape(step_in,
+                          |node| extract(node, &mut *ret.borrow_mut()),
+                          |node, action| {
+                              if ret.borrow().is_none() {
+                                  // take out the last visited node if `extract` was unable to
+                                  *ret.borrow_mut() = match action {
+                                      Left => node.detach_left(),
+                                      Right => node.detach_right(),
+                                      Stop => unreachable!(),
+                                  };
+                              }
+                              step_out(node, action);
+                          });
         ret.into_inner()
     }
 
@@ -263,15 +272,15 @@ pub trait NodeMut: Node + Sized {
                 Some(left)
             } else {
                 // fetch the rightmost descendant of left into pio (previous-in-order of self)
-                let mut pio = left.extract(|_| Right,
-                                           |node, ret| {
-                                               if let Some(mut left) = node.detach_left() {
-                                                   // the rightmost node has a left child
-                                                   mem::swap(&mut *left, node);
-                                                   *ret = Some(left);
-                                               }
-                                           },
-                                           &mut step_out);
+                let mut pio = left.walk_extract(|_| Right,
+                                                |node, ret| {
+                                                    if let Some(mut left) = node.detach_left() {
+                                                        // the rightmost node has a left child
+                                                        mem::swap(&mut *left, node);
+                                                        *ret = Some(left);
+                                                    }
+                                                },
+                                                &mut step_out);
                 if let Some(ref mut pio) = pio {
                     pio.insert_left(Some(left));
                 } else {
@@ -294,7 +303,7 @@ pub trait NodeMut: Node + Sized {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-/// List of actions taken during `Node::walk` or `NodeMut::walk_mut`.
+/// List of actions during a `Node::walk` or `NodeMut::walk_*`.
 pub enum WalkAction {
     /// Enter(ed) the left child
     Left,

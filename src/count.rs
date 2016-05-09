@@ -123,7 +123,25 @@ impl<T> CountTree<T> {
         }
     }
 
-    // TODO get_mut or mut_with
+    /// Returns a mutable reference to the element at the given index, or `None`
+    /// if out of bounds. Time complexity: O(log(n))
+    pub fn get_mut<'a>(&'a mut self, index: usize) -> Option<&'a mut T> {
+        use WalkAction::*;
+
+        if index >= self.len() {
+            None
+        } else {
+            let mut val = None;
+            let mut up_count = 0;
+            let root = self.root_must();
+            root.walk_mut_simple(|node| index_walker!(index, node, up_count, {}),
+                                 |node: &'a mut CountNode<T>| {
+                                     val = Some(node.value_mut());
+                                 });
+            assert!(val.is_some());
+            val
+        }
+    }
 
     /// Inserts an element at the given index. Time complexity: O(log(n))
     ///
@@ -571,6 +589,9 @@ mod tests {
         assert_eq!(ct.get(2), Some(&7));
         assert_eq!(ct.get(3), Some(&5));
         assert_eq!(ct.get(4), None);
+        let mut ct = ct;
+        ct.get_mut(3).map(|v| *v = 100);
+        assert_eq!(ct.get(3), Some(&100));
     }
 
     #[test]

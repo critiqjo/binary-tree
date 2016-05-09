@@ -77,6 +77,10 @@ macro_rules! index_walker {
 pub struct CountTree<T>(Option<NodePtr<T>>);
 
 impl<T> CountTree<T> {
+    fn root_must(&mut self) -> &mut CountNode<T> {
+        &mut **self.0.as_mut().unwrap()
+    }
+
     /// Returns an empty `CountTree`
     pub fn new() -> CountTree<T> {
         CountTree(None)
@@ -135,12 +139,13 @@ impl<T> CountTree<T> {
         } else if index < len {
             let new_node = Box::new(CountNode::new(value));
             let mut up_count = 0;
-            self.0.as_mut().unwrap().walk_mut(|node| index_walker!(index, node, up_count, {}),
-                                              move |node| {
-                                                  node.insert_before(new_node,
-                                                                     |node, _| node.rebalance());
-                                              },
-                                              |node, _| node.rebalance());
+            let root = self.root_must();
+            root.walk_mut(|node| index_walker!(index, node, up_count, {}),
+                          move |node| {
+                              node.insert_before(new_node,
+                                                 |node, _| node.rebalance());
+                          },
+                          |node, _| node.rebalance());
         } else if index == len {
             self.push_back(value);
         } else {
@@ -154,11 +159,11 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
-            self.0.as_mut().unwrap().walk_mut(|_| WalkAction::Left,
-                                              move |node| {
-                                                  node.insert_left(Some(new_node));
-                                              },
-                                              |node, _| node.rebalance());
+            self.root_must().walk_mut(|_| WalkAction::Left,
+                                      move |node| {
+                                          node.insert_left(Some(new_node));
+                                      },
+                                      |node, _| node.rebalance());
         }
     }
 
@@ -168,11 +173,11 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
-            self.0.as_mut().unwrap().walk_mut(|_| WalkAction::Right,
-                                              move |node| {
-                                                  node.insert_right(Some(new_node));
-                                              },
-                                              |node, _| node.rebalance());
+            self.root_must().walk_mut(|_| WalkAction::Right,
+                                      move |node| {
+                                          node.insert_right(Some(new_node));
+                                      },
+                                      |node, _| node.rebalance());
         }
     }
 
@@ -189,7 +194,7 @@ impl<T> CountTree<T> {
             self.pop_front().expect("Tree is empty!")
         } else if index + 1 < len {
             let mut up_count = 0;
-            let root = self.0.as_mut().unwrap();
+            let root = self.root_must();
             root.extract(|node| index_walker!(index, node, up_count, {}),
                          |node, ret| {
                              *ret = node.try_remove(|node, _| {
@@ -213,7 +218,7 @@ impl<T> CountTree<T> {
         } else if self.len() == 1 {
             Some(self.0.take().unwrap().value_owned())
         } else {
-            let root = self.0.as_mut().unwrap();
+            let root = self.root_must();
             Some(root.extract(|_| WalkAction::Left,
                               |node, ret| {
                                   if let Some(mut right) = node.detach_right() {
@@ -235,7 +240,7 @@ impl<T> CountTree<T> {
         } else if self.len() == 1 {
             Some(self.0.take().unwrap().value_owned())
         } else {
-            let root = self.0.as_mut().unwrap();
+            let root = self.root_must();
             Some(root.extract(|_| WalkAction::Right,
                               |node, ret| {
                                   if let Some(mut left) = node.detach_left() {

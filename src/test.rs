@@ -114,7 +114,11 @@ impl<T> NodeMut for TestNode<T> {
         st
     }
 
-    fn value_owned(self) -> T {
+    fn value_mut(&mut self) -> &mut T {
+        &mut self.val
+    }
+
+    fn into_value(self) -> T {
         self.val
     }
 

@@ -203,7 +203,7 @@ impl<T> CountTree<T> {
                          },
                          |node, _| node.rebalance())
                 .unwrap()
-                .value_owned()
+                .into_value()
         } else if index + 1 == len {
             self.pop_back().unwrap()
         } else {
@@ -216,7 +216,7 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             None
         } else if self.len() == 1 {
-            Some(self.0.take().unwrap().value_owned())
+            Some(self.0.take().unwrap().into_value())
         } else {
             let root = self.root_must();
             Some(root.extract(|_| WalkAction::Left,
@@ -228,7 +228,7 @@ impl<T> CountTree<T> {
                               },
                               |node, _| node.rebalance())
                      .unwrap()
-                     .value_owned())
+                     .into_value())
         }
     }
 
@@ -238,7 +238,7 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             None
         } else if self.len() == 1 {
-            Some(self.0.take().unwrap().value_owned())
+            Some(self.0.take().unwrap().into_value())
         } else {
             let root = self.root_must();
             Some(root.extract(|_| WalkAction::Right,
@@ -250,7 +250,7 @@ impl<T> CountTree<T> {
                               },
                               |node, _| node.rebalance())
                      .unwrap()
-                     .value_owned())
+                     .into_value())
         }
     }
 
@@ -529,7 +529,11 @@ impl<T> NodeMut for CountNode<T> {
         tree
     }
 
-    fn value_owned(self) -> T {
+    fn value_mut(&mut self) -> &mut T {
+        &mut self.val
+    }
+
+    fn into_value(self) -> T {
         self.val
     }
 

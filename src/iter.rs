@@ -82,7 +82,7 @@ impl<T> Iterator for IntoIter<T>
             if let Some(st) = subtree.detach_right() {
                 self.stack.push((st, IterAction::Left));
             }
-            Some(subtree.unbox().value_owned())
+            Some(subtree.unbox().into_value())
         } else {
             None
         }

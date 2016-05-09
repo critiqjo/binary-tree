@@ -76,8 +76,11 @@ pub trait NodeMut: Node + Sized {
     /// Replace the right subtree with `tree` and return the old one.
     fn insert_right(&mut self, tree: Option<Self::NodePtr>) -> Option<Self::NodePtr>;
 
+    /// Returns a mutable reference to the value of the current node.
+    fn value_mut(&mut self) -> &mut Self::Value;
+
     /// Consume a Node and return its value
-    fn value_owned(self) -> Self::Value;
+    fn into_value(self) -> Self::Value;
 
     /// Returns a mutable reference to the left child
     fn left_mut<'a>(&'a mut self) -> Option<&'a mut Self>;

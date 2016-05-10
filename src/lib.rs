@@ -83,10 +83,10 @@ pub trait NodeMut: Node + Sized {
     fn into_value(self) -> Self::Value;
 
     /// Returns a mutable reference to the left child
-    fn left_mut<'a>(&'a mut self) -> Option<&'a mut Self>;
+    fn left_mut(&mut self) -> Option<&mut Self>;
 
     /// Returns a mutable reference to the right child
-    fn right_mut<'a>(&'a mut self) -> Option<&'a mut Self>;
+    fn right_mut(&mut self) -> Option<&mut Self>;
 
     /// Try to rotate the tree left if right subtree exists
     fn rotate_left(&mut self) -> Result<(), ()> {

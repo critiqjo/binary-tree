@@ -105,7 +105,7 @@ impl<T> CountTree<T> {
 
     /// Returns the element at the given index, or `None` if index is out of
     /// bounds. Time complexity: O(log(n))
-    pub fn get<'a>(&'a self, index: usize) -> Option<&'a T> {
+    pub fn get(&self, index: usize) -> Option<&T> {
         use WalkAction::*;
 
         if index >= self.len() {
@@ -113,19 +113,19 @@ impl<T> CountTree<T> {
         } else {
             let mut val = None;
             let mut up_count = 0;
-            self.root().unwrap().walk(|node: &'a CountNode<T>| {
+            self.root().unwrap().walk(|node| {
                 index_walker!(index, node, up_count, {
                     val = Some(node.value());
                 })
             });
-            assert!(val.is_some());
+            debug_assert!(val.is_some());
             val
         }
     }
 
     /// Returns a mutable reference to the element at the given index, or `None`
     /// if out of bounds. Time complexity: O(log(n))
-    pub fn get_mut<'a>(&'a mut self, index: usize) -> Option<&'a mut T> {
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
         use WalkAction::*;
 
         if index >= self.len() {
@@ -135,10 +135,8 @@ impl<T> CountTree<T> {
             let mut up_count = 0;
             let root = self.root_must();
             root.walk_mut(|node| index_walker!(index, node, up_count, {}),
-                          |node: &'a mut CountNode<T>| {
-                              val = Some(node.value_mut());
-                          });
-            assert!(val.is_some());
+                          |node| val = Some(node.value_mut()));
+            debug_assert!(val.is_some());
             val
         }
     }
@@ -215,9 +213,7 @@ impl<T> CountTree<T> {
             let root = self.root_must();
             root.walk_extract(|node| index_walker!(index, node, up_count, {}),
                               |node, ret| {
-                                  *ret = node.try_remove(|node, _| {
-                                      node.rebalance()
-                                  });
+                                  *ret = node.try_remove(|node, _| node.rebalance());
                               },
                               |node, _| node.rebalance())
                 .unwrap()
@@ -558,11 +554,11 @@ impl<T> NodeMut for CountNode<T> {
         self.val
     }
 
-    fn left_mut<'a>(&'a mut self) -> Option<&'a mut Self> {
+    fn left_mut(&mut self) -> Option<&mut Self> {
         self.left.as_mut().map(|l| &mut **l)
     }
 
-    fn right_mut<'a>(&'a mut self) -> Option<&'a mut Self> {
+    fn right_mut(&mut self) -> Option<&mut Self> {
         self.right.as_mut().map(|r| &mut **r)
     }
 }

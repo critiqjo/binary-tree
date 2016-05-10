@@ -30,9 +30,8 @@ pub fn insert_at_random_ct(b: &mut Bencher) {
     b.iter(|| {
         let mut rng = rng.clone();
         let mut ct = CountTree::new();
-        ct.insert(0, 0);
-        for i in 1..TOTAL {
-            ct.insert(rng.gen_range(0, i), i);
+        for i in 0..TOTAL {
+            ct.insert(rng.gen_range(0, i + 1), i);
         }
     });
 }
@@ -44,9 +43,8 @@ pub fn insert_at_random_vec(b: &mut Bencher) {
     b.iter(|| {
         let mut rng = rng.clone();
         let mut v = Vec::new();
-        v.insert(0, 0);
-        for i in 1..TOTAL {
-            v.insert(rng.gen_range(0, i), i);
+        for i in 0..TOTAL {
+            v.insert(rng.gen_range(0, i + 1), i);
         }
     });
 }

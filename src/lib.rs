@@ -6,6 +6,9 @@
 //! * Height of a node is the length of the longest path to _its_ leaves. Thus
 //!   all leaf nodes have zero height.
 
+#[cfg(test)]
+extern crate quickcheck;
+
 use std::mem;
 use std::ops::DerefMut;
 

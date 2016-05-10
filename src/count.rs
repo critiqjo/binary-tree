@@ -15,6 +15,9 @@ use std::mem;
 use std::iter::FromIterator;
 use std::fmt::{self, Debug};
 
+#[cfg(test)]
+use quickcheck::{Arbitrary, Gen};
+
 use Node;
 use NodeMut;
 use BinaryTree;
@@ -572,6 +575,49 @@ impl<T> Debug for CountNode<T>
             dt.field(&DebugPrefix("R", right));
         }
         dt.finish()
+    }
+}
+
+#[cfg(test)]
+impl Arbitrary for CountTree<usize> {
+    fn arbitrary<G: Gen>(g: &mut G) -> CountTree<usize> {
+        let size = { let s = g.size(); g.gen_range(0, s) };
+        let mut ct = CountTree::new();
+        for i in 0..size {
+            ct.insert(g.gen_range(0, i + 1), i);
+        }
+        ct
+    }
+
+    fn shrink(&self) -> Box<Iterator<Item=CountTree<usize>>> {
+        // value without subtrees
+        // left subtree
+        // right subtree
+        unimplemented!()
+    }
+}
+
+#[cfg(test)]
+impl<T> Clone for CountTree<T>
+    where T: Clone
+{
+    fn clone(&self) -> Self {
+        CountTree(self.0.clone())
+    }
+}
+
+#[cfg(test)]
+impl<T> Clone for CountNode<T>
+    where T: Clone
+{
+    fn clone(&self) -> Self {
+        CountNode {
+            val: self.val.clone(),
+            left: self.left.clone(),
+            right: self.right.clone(),
+            count: self.count,
+            height: self.height,
+        }
     }
 }
 

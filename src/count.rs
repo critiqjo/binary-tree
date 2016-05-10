@@ -13,6 +13,7 @@
 
 use std::mem;
 use std::iter::FromIterator;
+use std::fmt::{self, Debug};
 
 use Node;
 use NodeMut;
@@ -258,6 +259,24 @@ impl<T> BinaryTree for CountTree<T> {
 
     fn root(&self) -> Option<&Self::Node> {
         self.0.as_ref().map(|nodeptr| &**nodeptr)
+    }
+}
+
+impl<T> Debug for CountTree<T>
+    where T: Debug
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let mut ds = f.debug_struct("CountTree");
+        if let Some(ref root) = self.0 {
+            ds.field("_count", &root.count);
+            ds.field("_height", &root.height);
+            ds.field("_inner", &DebugPrefix("^", root));
+        } else {
+            ds.field("_count", &0);
+            ds.field("_height", &0);
+            ds.field("_inner", &DebugPrefix("^", &()));
+        }
+        ds.finish()
     }
 }
 
@@ -526,6 +545,33 @@ impl<T> NodeMut for CountNode<T> {
 
     fn value_owned(self) -> T {
         self.val
+    }
+}
+
+struct DebugPrefix<'a, 'b, T: 'b>(&'a str, &'b T);
+
+impl<'a, 'b, T> Debug for DebugPrefix<'a, 'b, T>
+    where T: Debug
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        try!(f.write_str(self.0));
+        self.1.fmt(f)
+    }
+}
+
+impl<T> Debug for CountNode<T>
+    where T: Debug
+{
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        let mut dt = f.debug_tuple("");
+        dt.field(&self.val);
+        if let Some(ref left) = self.left {
+            dt.field(&DebugPrefix("L", left));
+        }
+        if let Some(ref right) = self.right {
+            dt.field(&DebugPrefix("R", right));
+        }
+        dt.finish()
     }
 }
 

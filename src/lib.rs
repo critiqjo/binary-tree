@@ -79,8 +79,8 @@ pub trait NodeMut: Node + Sized {
     /// Returns a mutable reference to the value of the current node.
     fn value_mut(&mut self) -> &mut Self::Value;
 
-    /// Consume a Node and return its value
-    fn into_value(self) -> Self::Value;
+    /// Consume a Node and return its parts: (value, left, right)
+    fn into_parts(self) -> (Self::Value, Option<Self::NodePtr>, Option<Self::NodePtr>);
 
     /// Returns a mutable reference to the left child
     fn left_mut(&mut self) -> Option<&mut Self>;

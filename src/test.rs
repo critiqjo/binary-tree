@@ -118,8 +118,8 @@ impl<T> NodeMut for TestNode<T> {
         &mut self.val
     }
 
-    fn into_value(self) -> T {
-        self.val
+    fn into_parts(self) -> (T, Option<Self::NodePtr>, Option<Self::NodePtr>) {
+        (self.val, self.left, self.right)
     }
 
     fn left_mut(&mut self) -> Option<&mut Self> {

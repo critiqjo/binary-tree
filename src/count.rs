@@ -501,6 +501,11 @@ impl<T> CountNode<T> {
             self.height += 1;
         }
     }
+
+    fn into_value(self) -> T {
+        debug_assert!(self.count == 1, "count = {}", self.count);
+        self.val
+    }
 }
 
 impl<T> Node for CountNode<T> {
@@ -550,8 +555,8 @@ impl<T> NodeMut for CountNode<T> {
         &mut self.val
     }
 
-    fn into_value(self) -> T {
-        self.val
+    fn into_parts(self) -> (T, Option<Self::NodePtr>, Option<Self::NodePtr>) {
+        (self.val, self.left, self.right)
     }
 
     fn left_mut(&mut self) -> Option<&mut Self> {

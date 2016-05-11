@@ -3,6 +3,9 @@ language: rust
 rust:
   - stable
   - beta
+  - nightly
+
+script: ./test.sh
 
 branches:
   only:

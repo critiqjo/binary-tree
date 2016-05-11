@@ -15,6 +15,9 @@ use std::mem;
 use std::iter::FromIterator;
 use std::fmt::{self, Debug};
 
+#[cfg(feature="quickcheck")]
+use quickcheck::{Arbitrary, Gen};
+
 use Node;
 use NodeMut;
 use BinaryTree;
@@ -572,6 +575,110 @@ impl<T> Debug for CountNode<T>
             dt.field(&DebugPrefix("R", right));
         }
         dt.finish()
+    }
+}
+
+#[cfg(feature="quickcheck")]
+impl Arbitrary for CountTree<usize> {
+    fn arbitrary<G: Gen>(g: &mut G) -> CountTree<usize> {
+        let size = { let s = g.size(); g.gen_range(0, s) };
+        let mut ct = CountTree::new();
+        for i in 0..size {
+            ct.insert(g.gen_range(0, i + 1), i);
+        }
+        ct
+    }
+
+    fn shrink(&self) -> Box<Iterator<Item=CountTree<usize>>> {
+        Box::new(quickcheck::Shrinker::new(self))
+    }
+}
+
+#[cfg(feature="quickcheck")]
+impl<T> Clone for CountTree<T>
+    where T: Clone
+{
+    fn clone(&self) -> Self {
+        CountTree(self.0.clone())
+    }
+}
+
+#[cfg(feature="quickcheck")]
+impl<T> Clone for CountNode<T>
+    where T: Clone
+{
+    fn clone(&self) -> Self {
+        CountNode {
+            val: self.val.clone(),
+            left: self.left.clone(),
+            right: self.right.clone(),
+            count: self.count,
+            height: self.height,
+        }
+    }
+}
+
+#[cfg(feature="quickcheck")]
+pub mod quickcheck {
+    use super::CountTree;
+    use BinaryTree;
+
+    #[derive(Clone, Copy)]
+    enum ShrinkerState {
+        Value,
+        Left,
+        Right,
+        End,
+    }
+
+    pub struct Shrinker {
+        inner: CountTree<usize>,
+        state: ShrinkerState,
+    }
+
+    impl Shrinker {
+        pub fn new(inner: &CountTree<usize>) -> Shrinker {
+            Shrinker {
+                inner: inner.clone(),
+                state: ShrinkerState::Value,
+            }
+        }
+    }
+
+    impl Iterator for Shrinker {
+        type Item = CountTree<usize>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.inner.0.is_none() {
+                None
+            } else {
+                use self::ShrinkerState::*;
+                let root = self.inner.root().unwrap();
+                match self.state {
+                    Value => {
+                        let mut ct = CountTree::new();
+                        if root.count > 1 {
+                            ct.push_back(root.val);
+                            self.state = Left;
+                        } else {
+                            self.state = End;
+                        }
+                        Some(ct)
+                    }
+                    Left => {
+                        self.state = Right;
+                        Some(CountTree(root.left.clone()))
+                    }
+                    Right => {
+                        self.state = End;
+                        Some(CountTree(root.right.clone()))
+                    }
+                    End => {
+                        None
+                    }
+                }
+            }
+        }
     }
 }
 

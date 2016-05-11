@@ -590,10 +590,7 @@ impl Arbitrary for CountTree<usize> {
     }
 
     fn shrink(&self) -> Box<Iterator<Item=CountTree<usize>>> {
-        // value without subtrees
-        // left subtree
-        // right subtree
-        unimplemented!()
+        Box::new(quickcheck::Shrinker::new(self))
     }
 }
 
@@ -617,6 +614,66 @@ impl<T> Clone for CountNode<T>
             right: self.right.clone(),
             count: self.count,
             height: self.height,
+        }
+    }
+}
+
+#[cfg(test)]
+pub mod quickcheck {
+    use super::CountTree;
+    use BinaryTree;
+
+    #[derive(Clone, Copy)]
+    enum ShrinkerState {
+        Value,
+        Left,
+        Right,
+        End,
+    }
+
+    pub struct Shrinker {
+        inner: CountTree<usize>,
+        state: ShrinkerState,
+    }
+
+    impl Shrinker {
+        pub fn new(inner: &CountTree<usize>) -> Shrinker {
+            Shrinker {
+                inner: inner.clone(),
+                state: ShrinkerState::Value,
+            }
+        }
+    }
+
+    impl Iterator for Shrinker {
+        type Item = CountTree<usize>;
+
+        fn next(&mut self) -> Option<Self::Item> {
+            if self.inner.0.is_none() {
+                None
+            } else {
+                use self::ShrinkerState::*;
+                let root = self.inner.root().unwrap();
+                match self.state {
+                    Value => {
+                        self.state = Left;
+                        let mut ct = CountTree::new();
+                        ct.push_back(root.val);
+                        Some(ct)
+                    }
+                    Left => {
+                        self.state = Right;
+                        Some(CountTree(root.left.clone()))
+                    }
+                    Right => {
+                        self.state = End;
+                        Some(CountTree(root.right.clone()))
+                    }
+                    End => {
+                        None
+                    }
+                }
+            }
         }
     }
 }

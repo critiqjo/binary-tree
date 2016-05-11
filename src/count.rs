@@ -656,9 +656,13 @@ pub mod quickcheck {
                 let root = self.inner.root().unwrap();
                 match self.state {
                     Value => {
-                        self.state = Left;
                         let mut ct = CountTree::new();
-                        ct.push_back(root.val);
+                        if root.count > 1 {
+                            ct.push_back(root.val);
+                            self.state = Left;
+                        } else {
+                            self.state = End;
+                        }
                         Some(ct)
                     }
                     Left => {

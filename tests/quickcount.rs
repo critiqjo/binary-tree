@@ -1,6 +1,7 @@
+#![cfg(feature="qc_tests")]
+
 #![feature(plugin)]
 #![plugin(quickcheck_macros)]
-#![cfg(feature="quickcheck")]
 
 extern crate quickcheck;
 extern crate binary_tree;

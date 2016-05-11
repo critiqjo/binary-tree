@@ -15,7 +15,7 @@ use std::mem;
 use std::iter::FromIterator;
 use std::fmt::{self, Debug};
 
-#[cfg(test)]
+#[cfg(feature="quickcheck")]
 use quickcheck::{Arbitrary, Gen};
 
 use Node;
@@ -578,7 +578,7 @@ impl<T> Debug for CountNode<T>
     }
 }
 
-#[cfg(test)]
+#[cfg(feature="quickcheck")]
 impl Arbitrary for CountTree<usize> {
     fn arbitrary<G: Gen>(g: &mut G) -> CountTree<usize> {
         let size = { let s = g.size(); g.gen_range(0, s) };
@@ -594,7 +594,7 @@ impl Arbitrary for CountTree<usize> {
     }
 }
 
-#[cfg(test)]
+#[cfg(feature="quickcheck")]
 impl<T> Clone for CountTree<T>
     where T: Clone
 {
@@ -603,7 +603,7 @@ impl<T> Clone for CountTree<T>
     }
 }
 
-#[cfg(test)]
+#[cfg(feature="quickcheck")]
 impl<T> Clone for CountNode<T>
     where T: Clone
 {
@@ -618,7 +618,7 @@ impl<T> Clone for CountNode<T>
     }
 }
 
-#[cfg(test)]
+#[cfg(feature="quickcheck")]
 pub mod quickcheck {
     use super::CountTree;
     use BinaryTree;

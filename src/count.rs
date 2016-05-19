@@ -22,11 +22,12 @@ use Node;
 use NodeMut;
 use BinaryTree;
 use WalkAction;
+use cow::ArcCow;
 use iter::Iter as GenIter;
 use iter::IntoIter as GenIntoIter;
 use unbox::Unbox;
 
-pub type NodePtr<T> = Box<CountNode<T>>;
+pub type NodePtr<T> = ArcCow<CountNode<T>>;
 
 macro_rules! index_walker {
     ($index:ident, $node:ident, $up_count:ident, $stop:block) => {
@@ -79,9 +80,10 @@ macro_rules! index_walker {
 /// assert_eq!(ct.remove(32), 32);
 /// # }
 /// ```
-pub struct CountTree<T>(Option<NodePtr<T>>);
+#[derive(Clone)]
+pub struct CountTree<T: Clone>(Option<NodePtr<T>>);
 
-impl<T> CountTree<T> {
+impl<T: Clone> CountTree<T> {
     fn root_must(&mut self) -> &mut CountNode<T> {
         &mut **self.0.as_mut().unwrap()
     }
@@ -158,7 +160,7 @@ impl<T> CountTree<T> {
         if index == 0 {
             self.push_front(value);
         } else if index < len {
-            let new_node = Box::new(CountNode::new(value));
+            let new_node = ArcCow::new(CountNode::new(value));
             let mut up_count = 0;
             let root = self.root_must();
             root.walk_reshape(|node| index_walker!(index, node, up_count, {}),
@@ -176,7 +178,7 @@ impl<T> CountTree<T> {
 
     /// Prepends an element at the beginning.
     pub fn push_front(&mut self, value: T) {
-        let new_node = Box::new(CountNode::new(value));
+        let new_node = ArcCow::new(CountNode::new(value));
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
@@ -190,7 +192,7 @@ impl<T> CountTree<T> {
 
     /// Appends an element at the end.
     pub fn push_back(&mut self, value: T) {
-        let new_node = Box::new(CountNode::new(value));
+        let new_node = ArcCow::new(CountNode::new(value));
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
@@ -280,7 +282,7 @@ impl<T> CountTree<T> {
     // TODO { O(n) } truncate, append, split_off, retain
 }
 
-impl<T> BinaryTree for CountTree<T> {
+impl<T: Clone> BinaryTree for CountTree<T> {
     type Node = CountNode<T>;
 
     fn root(&self) -> Option<&Self::Node> {
@@ -288,7 +290,7 @@ impl<T> BinaryTree for CountTree<T> {
     }
 }
 
-impl<T> Debug for CountTree<T>
+impl<T: Clone> Debug for CountTree<T>
     where T: Debug
 {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
@@ -306,7 +308,7 @@ impl<T> Debug for CountTree<T>
     }
 }
 
-impl<T> Drop for CountTree<T> {
+impl<T: Clone> Drop for CountTree<T> {
     fn drop(&mut self) {
         self.clear();
     }
@@ -335,7 +337,7 @@ fn exp_floor_log(v: u32) -> u32 {
     }
 }
 
-impl<T> FromIterator<T> for CountTree<T> {
+impl<T: Clone> FromIterator<T> for CountTree<T> {
     /// Time complexity: &Theta;(n + log<sup>2</sup>(n))
     fn from_iter<I>(iterable: I) -> Self
         where I: IntoIterator<Item = T>
@@ -344,10 +346,10 @@ impl<T> FromIterator<T> for CountTree<T> {
 
         let mut iter = iterable.into_iter();
         if let Some(item) = iter.next() {
-            let mut node = Box::new(CountNode::new(item));
+            let mut node = ArcCow::new(CountNode::new(item));
             let mut count = 1;
             for item in iter {
-                let mut new_node = Box::new(CountNode::new(item));
+                let mut new_node = ArcCow::new(CountNode::new(item));
                 new_node.insert_left(Some(node));
                 node = new_node;
                 count += 1;
@@ -389,7 +391,7 @@ impl<T> FromIterator<T> for CountTree<T> {
     }
 }
 
-impl<'a, T> IntoIterator for &'a CountTree<T> {
+impl<'a, T: Clone> IntoIterator for &'a CountTree<T> {
     type Item = &'a T;
     type IntoIter = Iter<'a, T>;
 
@@ -423,7 +425,7 @@ impl<'a, T> Iterator for Iter<'a, T> {
 
 impl<'a, T> ExactSizeIterator for Iter<'a, T> {}
 
-impl<T> IntoIterator for CountTree<T> {
+impl<T: Clone> IntoIterator for CountTree<T> {
     type Item = T;
     type IntoIter = IntoIter<T>;
 
@@ -438,12 +440,12 @@ impl<T> IntoIterator for CountTree<T> {
     }
 }
 
-pub struct IntoIter<T> {
+pub struct IntoIter<T: Clone> {
     inner: GenIntoIter<CountNode<T>>,
     remaining: usize,
 }
 
-impl<T> Iterator for IntoIter<T> {
+impl<T: Clone> Iterator for IntoIter<T> {
     type Item = T;
 
     fn next(&mut self) -> Option<T> {
@@ -458,7 +460,7 @@ impl<T> Iterator for IntoIter<T> {
     }
 }
 
-impl<T> ExactSizeIterator for IntoIter<T> {}
+impl<T: Clone> ExactSizeIterator for IntoIter<T> {}
 
 /// Node of a `CountTree`.
 ///
@@ -466,6 +468,7 @@ impl<T> ExactSizeIterator for IntoIter<T> {}
 /// [`CountTree::root()`](struct.CountTree.html#method.root) method which
 /// returns a shared reference to its root.  Thus `NodeMut` methods are not
 /// accessible to users.
+#[derive(Clone)]
 pub struct CountNode<T> {
     val: T,
     left: Option<NodePtr<T>>,
@@ -474,7 +477,7 @@ pub struct CountNode<T> {
     height: u16,
 }
 
-impl<T> CountNode<T> {
+impl<T: Clone> CountNode<T> {
     fn new(val: T) -> CountNode<T> {
         CountNode {
             val: val,
@@ -550,7 +553,7 @@ impl<T> Node for CountNode<T> {
     }
 }
 
-impl<T> NodeMut for CountNode<T> {
+impl<T: Clone> NodeMut for CountNode<T> {
     type NodePtr = NodePtr<T>;
 
     fn detach_left(&mut self) -> Option<Self::NodePtr> {
@@ -638,30 +641,6 @@ impl Arbitrary for CountTree<usize> {
 }
 
 #[cfg(feature="quickcheck")]
-impl<T> Clone for CountTree<T>
-    where T: Clone
-{
-    fn clone(&self) -> Self {
-        CountTree(self.0.clone())
-    }
-}
-
-#[cfg(feature="quickcheck")]
-impl<T> Clone for CountNode<T>
-    where T: Clone
-{
-    fn clone(&self) -> Self {
-        CountNode {
-            val: self.val.clone(),
-            left: self.left.clone(),
-            right: self.right.clone(),
-            count: self.count,
-            height: self.height,
-        }
-    }
-}
-
-#[cfg(feature="quickcheck")]
 pub mod quickcheck {
     use super::CountTree;
     use BinaryTree;
@@ -731,14 +710,15 @@ mod tests {
     use NodeMut;
     use super::CountNode;
     use super::CountTree;
+    use cow::ArcCow;
     use test::compute_level;
     use test::Level;
 
-    fn test_nodes() -> Box<CountNode<u32>> {
-        let mut cn = Box::new(CountNode::new(7));
-        cn.insert_before(Box::new(CountNode::new(8)), |_, _| ());
-        cn.insert_before(Box::new(CountNode::new(12)), |_, _| ());
-        cn.insert_right(Some(Box::new(CountNode::new(5))));
+    fn test_nodes() -> ArcCow<CountNode<u32>> {
+        let mut cn = ArcCow::new(CountNode::new(7));
+        cn.insert_before(ArcCow::new(CountNode::new(8)), |_, _| ());
+        cn.insert_before(ArcCow::new(CountNode::new(12)), |_, _| ());
+        cn.insert_right(Some(ArcCow::new(CountNode::new(5))));
         cn
     }
 

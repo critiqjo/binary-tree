@@ -24,6 +24,7 @@ use BinaryTree;
 use WalkAction;
 use iter::Iter as GenIter;
 use iter::IntoIter as GenIntoIter;
+use unbox::Unbox;
 
 pub type NodePtr<T> = Box<CountNode<T>>;
 
@@ -220,6 +221,7 @@ impl<T> CountTree<T> {
                                   *ret = node.try_remove(|node, _| node.rebalance());
                               },
                               |node, _| node.rebalance())
+                .map(|p| p.unbox())
                 .unwrap()
                 .into_value()
         } else if index + 1 == len {
@@ -234,7 +236,7 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             None
         } else if self.len() == 1 {
-            Some(self.0.take().unwrap().into_value())
+            Some(self.0.take().map(|p| p.unbox()).unwrap().into_value())
         } else {
             let root = self.root_must();
             Some(root.walk_extract(|_| WalkAction::Left,
@@ -245,6 +247,7 @@ impl<T> CountTree<T> {
                                        }
                                    },
                                    |node, _| node.rebalance())
+                     .map(|p| p.unbox())
                      .unwrap()
                      .into_value())
         }
@@ -256,7 +259,7 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             None
         } else if self.len() == 1 {
-            Some(self.0.take().unwrap().into_value())
+            Some(self.0.take().map(|p| p.unbox()).unwrap().into_value())
         } else {
             let root = self.root_must();
             Some(root.walk_extract(|_| WalkAction::Right,
@@ -267,6 +270,7 @@ impl<T> CountTree<T> {
                                        }
                                    },
                                    |node, _| node.rebalance())
+                     .map(|p| p.unbox())
                      .unwrap()
                      .into_value())
         }

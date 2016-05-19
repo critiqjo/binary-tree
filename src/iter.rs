@@ -74,15 +74,16 @@ impl<T> Iterator for IntoIter<T>
     fn next(&mut self) -> Option<T::Value> {
         if let Some((mut subtree, action)) = self.stack.pop() {
             if action == IterAction::Left {
-                while let Some(st) = subtree.detach_left() {
+                while let Some(left) = subtree.detach_left() {
                     self.stack.push((subtree, IterAction::Right));
-                    subtree = st;
+                    subtree = left;
                 }
             }
-            if let Some(st) = subtree.detach_right() {
+            let (value, _, right) = subtree.unbox().into_parts();
+            if let Some(st) = right {
                 self.stack.push((st, IterAction::Left));
             }
-            Some(subtree.unbox().value_owned())
+            Some(value)
         } else {
             None
         }

@@ -81,6 +81,10 @@ macro_rules! index_walker {
 pub struct CountTree<T>(Option<NodePtr<T>>);
 
 impl<T> CountTree<T> {
+    fn root_must(&mut self) -> &mut CountNode<T> {
+        &mut **self.0.as_mut().unwrap()
+    }
+
     /// Returns an empty `CountTree`
     pub fn new() -> CountTree<T> {
         CountTree(None)
@@ -105,7 +109,7 @@ impl<T> CountTree<T> {
 
     /// Returns the element at the given index, or `None` if index is out of
     /// bounds. Time complexity: O(log(n))
-    pub fn get<'a>(&'a self, index: usize) -> Option<&'a T> {
+    pub fn get(&self, index: usize) -> Option<&T> {
         use WalkAction::*;
 
         if index >= self.len() {
@@ -113,17 +117,33 @@ impl<T> CountTree<T> {
         } else {
             let mut val = None;
             let mut up_count = 0;
-            self.root().unwrap().walk(|node: &'a CountNode<T>| {
+            self.root().unwrap().walk(|node| {
                 index_walker!(index, node, up_count, {
                     val = Some(node.value());
                 })
             });
-            assert!(val.is_some());
+            debug_assert!(val.is_some());
             val
         }
     }
 
-    // TODO get_mut or mut_with
+    /// Returns a mutable reference to the element at the given index, or `None`
+    /// if out of bounds. Time complexity: O(log(n))
+    pub fn get_mut(&mut self, index: usize) -> Option<&mut T> {
+        use WalkAction::*;
+
+        if index >= self.len() {
+            None
+        } else {
+            let mut val = None;
+            let mut up_count = 0;
+            let root = self.root_must();
+            root.walk_mut(|node| index_walker!(index, node, up_count, {}),
+                          |node| val = Some(node.value_mut()));
+            debug_assert!(val.is_some());
+            val
+        }
+    }
 
     /// Inserts an element at the given index. Time complexity: O(log(n))
     ///
@@ -139,12 +159,13 @@ impl<T> CountTree<T> {
         } else if index < len {
             let new_node = Box::new(CountNode::new(value));
             let mut up_count = 0;
-            self.0.as_mut().unwrap().walk_mut(|node| index_walker!(index, node, up_count, {}),
-                                              move |node| {
-                                                  node.insert_before(new_node,
-                                                                     |node, _| node.rebalance());
-                                              },
-                                              |node, _| node.rebalance());
+            let root = self.root_must();
+            root.walk_reshape(|node| index_walker!(index, node, up_count, {}),
+                              move |node| {
+                                  node.insert_before(new_node,
+                                                     |node, _| node.rebalance());
+                              },
+                              |node, _| node.rebalance());
         } else if index == len {
             self.push_back(value);
         } else {
@@ -158,11 +179,11 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
-            self.0.as_mut().unwrap().walk_mut(|_| WalkAction::Left,
-                                              move |node| {
-                                                  node.insert_left(Some(new_node));
-                                              },
-                                              |node, _| node.rebalance());
+            self.root_must().walk_reshape(|_| WalkAction::Left,
+                                          move |node| {
+                                              node.insert_left(Some(new_node));
+                                          },
+                                          |node, _| node.rebalance());
         }
     }
 
@@ -172,11 +193,11 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             self.0 = Some(new_node);
         } else {
-            self.0.as_mut().unwrap().walk_mut(|_| WalkAction::Right,
-                                              move |node| {
-                                                  node.insert_right(Some(new_node));
-                                              },
-                                              |node, _| node.rebalance());
+            self.root_must().walk_reshape(|_| WalkAction::Right,
+                                          move |node| {
+                                              node.insert_right(Some(new_node));
+                                          },
+                                          |node, _| node.rebalance());
         }
     }
 
@@ -193,16 +214,14 @@ impl<T> CountTree<T> {
             self.pop_front().expect("Tree is empty!")
         } else if index + 1 < len {
             let mut up_count = 0;
-            let root = self.0.as_mut().unwrap();
-            root.extract(|node| index_walker!(index, node, up_count, {}),
-                         |node, ret| {
-                             *ret = node.try_remove(|node, _| {
-                                 node.rebalance()
-                             });
-                         },
-                         |node, _| node.rebalance())
+            let root = self.root_must();
+            root.walk_extract(|node| index_walker!(index, node, up_count, {}),
+                              |node, ret| {
+                                  *ret = node.try_remove(|node, _| node.rebalance());
+                              },
+                              |node, _| node.rebalance())
                 .unwrap()
-                .value_owned()
+                .into_value()
         } else if index + 1 == len {
             self.pop_back().unwrap()
         } else {
@@ -215,19 +234,19 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             None
         } else if self.len() == 1 {
-            Some(self.0.take().unwrap().value_owned())
+            Some(self.0.take().unwrap().into_value())
         } else {
-            let root = self.0.as_mut().unwrap();
-            Some(root.extract(|_| WalkAction::Left,
-                              |node, ret| {
-                                  if let Some(mut right) = node.detach_right() {
-                                      mem::swap(&mut *right, node);
-                                      *ret = Some(right);
-                                  }
-                              },
-                              |node, _| node.rebalance())
+            let root = self.root_must();
+            Some(root.walk_extract(|_| WalkAction::Left,
+                                   |node, ret| {
+                                       if let Some(mut right) = node.detach_right() {
+                                           mem::swap(&mut *right, node);
+                                           *ret = Some(right);
+                                       }
+                                   },
+                                   |node, _| node.rebalance())
                      .unwrap()
-                     .value_owned())
+                     .into_value())
         }
     }
 
@@ -237,19 +256,19 @@ impl<T> CountTree<T> {
         if self.is_empty() {
             None
         } else if self.len() == 1 {
-            Some(self.0.take().unwrap().value_owned())
+            Some(self.0.take().unwrap().into_value())
         } else {
-            let root = self.0.as_mut().unwrap();
-            Some(root.extract(|_| WalkAction::Right,
-                              |node, ret| {
-                                  if let Some(mut left) = node.detach_left() {
-                                      mem::swap(&mut *left, node);
-                                      *ret = Some(left);
-                                  }
-                              },
-                              |node, _| node.rebalance())
+            let root = self.root_must();
+            Some(root.walk_extract(|_| WalkAction::Right,
+                                   |node, ret| {
+                                       if let Some(mut left) = node.detach_left() {
+                                           mem::swap(&mut *left, node);
+                                           *ret = Some(left);
+                                       }
+                                   },
+                                   |node, _| node.rebalance())
                      .unwrap()
-                     .value_owned())
+                     .into_value())
         }
     }
 
@@ -344,16 +363,19 @@ impl<T> FromIterator<T> for CountTree<T> {
             count = node.lcount() + 1; // not needed
             while count > balanced_till {
                 node.rotate_right().unwrap();
-                node.right.as_mut().unwrap().walk_mut(|node| {
-                                                          if node.balance_factor() > 1 {
-                                                              node.rotate_right().unwrap();
-                                                              Right
-                                                          } else {
-                                                              Stop
-                                                          }
-                                                      },
-                                                      |_| (),
-                                                      |_, _| ());
+                node.right
+                    .as_mut()
+                    .unwrap()
+                    .walk_reshape(|node| {
+                                      if node.balance_factor() > 1 {
+                                          node.rotate_right().unwrap();
+                                          Right
+                                      } else {
+                                          Stop
+                                      }
+                                  },
+                                  |_| (),
+                                  |_, _| ());
                 count = node.lcount() + 1;
             }
             CountTree(Some(node))
@@ -501,6 +523,11 @@ impl<T> CountNode<T> {
             self.height += 1;
         }
     }
+
+    fn into_value(self) -> T {
+        debug_assert!(self.count == 1, "count = {}", self.count);
+        self.val
+    }
 }
 
 impl<T> Node for CountNode<T> {
@@ -546,8 +573,20 @@ impl<T> NodeMut for CountNode<T> {
         tree
     }
 
-    fn value_owned(self) -> T {
-        self.val
+    fn value_mut(&mut self) -> &mut T {
+        &mut self.val
+    }
+
+    fn into_parts(self) -> (T, Option<Self::NodePtr>, Option<Self::NodePtr>) {
+        (self.val, self.left, self.right)
+    }
+
+    fn left_mut(&mut self) -> Option<&mut Self> {
+        self.left.as_mut().map(|l| &mut **l)
+    }
+
+    fn right_mut(&mut self) -> Option<&mut Self> {
+        self.right.as_mut().map(|r| &mut **r)
     }
 }
 
@@ -707,6 +746,9 @@ mod tests {
         assert_eq!(ct.get(2), Some(&7));
         assert_eq!(ct.get(3), Some(&5));
         assert_eq!(ct.get(4), None);
+        let mut ct = ct;
+        ct.get_mut(3).map(|v| *v = 100);
+        assert_eq!(ct.get(3), Some(&100));
     }
 
     #[test]

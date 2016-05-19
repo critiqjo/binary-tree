@@ -114,8 +114,20 @@ impl<T> NodeMut for TestNode<T> {
         st
     }
 
-    fn value_owned(self) -> T {
-        self.val
+    fn value_mut(&mut self) -> &mut T {
+        &mut self.val
+    }
+
+    fn into_parts(self) -> (T, Option<Self::NodePtr>, Option<Self::NodePtr>) {
+        (self.val, self.left, self.right)
+    }
+
+    fn left_mut(&mut self) -> Option<&mut Self> {
+        self.left.as_mut().map(|l| &mut **l)
+    }
+
+    fn right_mut(&mut self) -> Option<&mut Self> {
+        self.right.as_mut().map(|r| &mut **r)
     }
 }
 
@@ -169,15 +181,15 @@ mod tests {
         let mut steps = vec![Right, Left, Stop];
         {
             let mut step_iter = steps.drain(..);
-            tt.walk_mut(|_| step_iter.next().unwrap(),
-                        |st| assert_eq!(st.val, 25),
-                        |st, action| {
-                            match action {
-                                Right => assert_eq!(st.val, 20),
-                                Left => assert_eq!(st.val, 30),
-                                Stop => unreachable!(),
-                            }
-                        });
+            tt.walk_reshape(|_| step_iter.next().unwrap(),
+                            |st| assert_eq!(st.val, 25),
+                            |st, action| {
+                                match action {
+                                    Right => assert_eq!(st.val, 20),
+                                    Left => assert_eq!(st.val, 30),
+                                    Stop => unreachable!(),
+                                }
+                            });
         }
         assert_eq!(steps.len(), 0);
     }

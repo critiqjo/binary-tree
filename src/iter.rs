@@ -51,14 +51,14 @@ impl<'a, T> Iterator for Iter<'a, T>
 
 pub struct IntoIter<T>
     where T: NodeMut,
-          T::NodePtr: Unbox<T>
+          T::NodePtr: Unbox<Target=T>
 {
     stack: Vec<(T::NodePtr, IterAction)>,
 }
 
 impl<T> IntoIter<T>
     where T: NodeMut,
-          T::NodePtr: Unbox<T>
+          T::NodePtr: Unbox<Target=T>
 {
     pub fn new(root: Option<T::NodePtr>) -> IntoIter<T> {
         IntoIter { stack: root.map_or(vec![], |node| vec![(node, IterAction::Left)]) }
@@ -67,7 +67,7 @@ impl<T> IntoIter<T>
 
 impl<T> Iterator for IntoIter<T>
     where T: NodeMut,
-          T::NodePtr: Unbox<T>
+          T::NodePtr: Unbox<Target=T>
 {
     type Item = T::Value;
 
@@ -92,7 +92,7 @@ impl<T> Iterator for IntoIter<T>
 
 impl<T> Drop for IntoIter<T>
     where T: NodeMut,
-          T::NodePtr: Unbox<T>
+          T::NodePtr: Unbox<Target=T>
 {
     fn drop(&mut self) {
         for _ in self {}

@@ -5,21 +5,27 @@ use std::rc::Rc;
 use std::sync::Arc;
 
 /// Trait specifying unboxing capability of a pointer type.
-pub trait Unbox<T: Sized> {
-    fn unbox(self) -> T;
+pub trait Unbox {
+    type Target;
+
+    fn unbox(self) -> Self::Target;
 }
 
-impl<T> Unbox<T> for Box<T>
+impl<T> Unbox for Box<T>
     where T: Sized
 {
+    type Target = T;
+
     fn unbox(self) -> T {
         unsafe { ptr::read(Box::into_raw(self)) }
     }
 }
 
-impl<T> Unbox<T> for Rc<T>
+impl<T> Unbox for Rc<T>
     where T: Clone
 {
+    type Target = T;
+
     fn unbox(mut self) -> T {
         Rc::make_mut(&mut self);
         match Rc::try_unwrap(self) {
@@ -29,9 +35,11 @@ impl<T> Unbox<T> for Rc<T>
     }
 }
 
-impl<T> Unbox<T> for Arc<T>
+impl<T> Unbox for Arc<T>
     where T: Clone
 {
+    type Target = T;
+
     fn unbox(mut self) -> T {
         Arc::make_mut(&mut self);
         match Arc::try_unwrap(self) {

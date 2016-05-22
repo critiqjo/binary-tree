@@ -10,6 +10,103 @@
 //!   - truncating the length (complexity unclear)
 //!   - appending another list (complexity unclear)
 //! - You have less than 4.29 billion (`u32::MAX`) elements!
+//!
+//! ## Benchmarks
+//!
+//! The constants in the complexity bounds are not small enough to make an
+//! immediate switch from `Vec` to `CountTree`. In the benchmarks below, `*_ct`
+//! indicate `CountTree`, `*_ll` indicate `LinkedList` and `*_vec` indicate
+//! `Vec`. `from_iter_*` indicate the performance of using `collect()`,
+//! `insert_at_random_*` indicate that of inserting N elements at random
+//! positions, and `remove_at_random_*` indicate that of first creating an N
+//! sized object using `collect()` and then removing all N elements at random
+//! one-by-one. See `benches` directory for more details.
+//!
+//! ### Bench: N=2048
+//!
+//! ```sh
+//!      Running target/release/from_iter-86b0c3c534a106e8
+//!
+//! running 3 tests
+//! test from_iter_ct  ... bench:     316,440 ns/iter (+/- 92,914)
+//! test from_iter_ll  ... bench:     299,755 ns/iter (+/- 2,096)
+//! test from_iter_vec ... bench:       2,839 ns/iter (+/- 24)
+//!
+//!      Running target/release/insert-892f694b6341f60d
+//!
+//! running 3 tests
+//! test insert_at_random_ct  ... bench:   1,569,694 ns/iter (+/- 239,724)
+//! test insert_at_random_ll  ... bench:   2,882,318 ns/iter (+/- 20,555)
+//! test insert_at_random_vec ... bench:     570,018 ns/iter (+/- 3,710)
+//!
+//!      Running target/release/remove-12ee8f5093c08f36
+//!
+//! running 3 tests
+//! test remove_at_random_ct  ... bench:   1,800,295 ns/iter (+/- 5,761)
+//! test remove_at_random_ll  ... bench:   2,702,035 ns/iter (+/- 22,632)
+//! test remove_at_random_vec ... bench:     568,502 ns/iter (+/- 3,626)
+//! ```
+//!
+//! ### Bench: N=4096
+//!
+//! ```sh
+//!      Running target/release/from_iter-86b0c3c534a106e8
+//!
+//! running 3 tests
+//! test from_iter_ct  ... bench:     698,944 ns/iter (+/- 25,819)
+//! test from_iter_ll  ... bench:     579,370 ns/iter (+/- 12,161)
+//! test from_iter_vec ... bench:       5,582 ns/iter (+/- 26)
+//!
+//!      Running target/release/insert-892f694b6341f60d
+//!
+//! running 3 tests
+//! test insert_at_random_ct  ... bench:   3,495,019 ns/iter (+/- 123,200)
+//! test insert_at_random_ll  ... bench:  14,470,666 ns/iter (+/- 39,605)
+//! test insert_at_random_vec ... bench:   1,896,108 ns/iter (+/- 3,925)
+//!
+//!      Running target/release/remove-12ee8f5093c08f36
+//!
+//! running 3 tests
+//! test remove_at_random_ct  ... bench:   3,966,049 ns/iter (+/- 25,852)
+//! test remove_at_random_ll  ... bench:  11,981,076 ns/iter (+/- 77,152)
+//! test remove_at_random_vec ... bench:   1,909,054 ns/iter (+/- 5,475)
+//! ```
+//!
+//! ### Bench: N=8192
+//!
+//! ```sh
+//!      Running target/release/from_iter-86b0c3c534a106e8
+//!
+//! running 3 tests
+//! test from_iter_ct  ... bench:   1,422,694 ns/iter (+/- 224,526)
+//! test from_iter_ll  ... bench:   1,190,954 ns/iter (+/- 17,328)
+//! test from_iter_vec ... bench:      11,487 ns/iter (+/- 52)
+//!
+//!      Running target/release/insert-892f694b6341f60d
+//!
+//! running 3 tests
+//! test insert_at_random_ct  ... bench:   7,651,408 ns/iter (+/- 232,136)
+//! test insert_at_random_ll  ... bench:  67,522,968 ns/iter (+/- 508,089)
+//! test insert_at_random_vec ... bench:   8,062,135 ns/iter (+/- 46,386)
+//!
+//!      Running target/release/remove-12ee8f5093c08f36
+//!
+//! running 3 tests
+//! test remove_at_random_ct  ... bench:   8,972,611 ns/iter (+/- 99,882)
+//! test remove_at_random_ll  ... bench:  50,513,436 ns/iter (+/- 161,649)
+//! test remove_at_random_vec ... bench:   8,166,272 ns/iter (+/- 35,268)
+//! ```
+//!
+//! ### Conclusion
+//!
+//! In short, if you want to maintiain a list of type `T` such that:
+//!
+//! ```sh
+//! [number of elements] * [size of T] > 256 KB
+//! ```
+//!
+//! then `CountTree` might be a good choice, otherwise you are better off using
+//! `Vec`.
 
 use std::mem;
 use std::iter::FromIterator;

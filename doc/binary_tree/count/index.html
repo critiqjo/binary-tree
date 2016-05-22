@@ -47,7 +47,7 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-54' class='srclink' href='../../src/binary_tree/src/count.rs.html#1-628' title='goto source code'>[src]</a></span></h1>
+               </span><a id='src-52' class='srclink' href='../../src/binary_tree/src/count.rs.html#1-920' title='goto source code'>[src]</a></span></h1>
 <div class='docblock'><p>Counting tree implementation.</p>
 
 <h2 id='when-should-you-use-counttree' class='section-header'><a href='#when-should-you-use-counttree'>When should you use <code>CountTree</code>?</a></h2>
@@ -64,6 +64,94 @@ position with O(log(n)) time complexity.</li>
 </ul></li>
 <li>You have less than 4.29 billion (<code>u32::MAX</code>) elements!</li>
 </ul>
+
+<h2 id='benchmarks' class='section-header'><a href='#benchmarks'>Benchmarks</a></h2>
+<p>The constants in the complexity bounds are not small enough to make an
+immediate switch from <code>Vec</code> to <code>CountTree</code>. In the benchmarks below, <code>*_ct</code>
+indicate <code>CountTree</code>, <code>*_ll</code> indicate <code>LinkedList</code> and <code>*_vec</code> indicate
+<code>Vec</code>. <code>from_iter_*</code> indicate the performance of using <code>collect()</code>,
+<code>insert_at_random_*</code> indicate that of inserting N elements at random
+positions, and <code>remove_at_random_*</code> indicate that of first creating an N
+sized object using <code>collect()</code> and then removing all N elements at random
+one-by-one. See <code>benches</code> directory for more details.</p>
+
+<h3 id='bench-n2048' class='section-header'><a href='#bench-n2048'>Bench: N=2048</a></h3>
+<pre><code class="language-sh">     Running target/release/from_iter-86b0c3c534a106e8
+
+running 3 tests
+test from_iter_ct  ... bench:     316,440 ns/iter (+/- 92,914)
+test from_iter_ll  ... bench:     299,755 ns/iter (+/- 2,096)
+test from_iter_vec ... bench:       2,839 ns/iter (+/- 24)
+
+     Running target/release/insert-892f694b6341f60d
+
+running 3 tests
+test insert_at_random_ct  ... bench:   1,569,694 ns/iter (+/- 239,724)
+test insert_at_random_ll  ... bench:   2,882,318 ns/iter (+/- 20,555)
+test insert_at_random_vec ... bench:     570,018 ns/iter (+/- 3,710)
+
+     Running target/release/remove-12ee8f5093c08f36
+
+running 3 tests
+test remove_at_random_ct  ... bench:   1,800,295 ns/iter (+/- 5,761)
+test remove_at_random_ll  ... bench:   2,702,035 ns/iter (+/- 22,632)
+test remove_at_random_vec ... bench:     568,502 ns/iter (+/- 3,626)
+</code></pre>
+
+<h3 id='bench-n4096' class='section-header'><a href='#bench-n4096'>Bench: N=4096</a></h3>
+<pre><code class="language-sh">     Running target/release/from_iter-86b0c3c534a106e8
+
+running 3 tests
+test from_iter_ct  ... bench:     698,944 ns/iter (+/- 25,819)
+test from_iter_ll  ... bench:     579,370 ns/iter (+/- 12,161)
+test from_iter_vec ... bench:       5,582 ns/iter (+/- 26)
+
+     Running target/release/insert-892f694b6341f60d
+
+running 3 tests
+test insert_at_random_ct  ... bench:   3,495,019 ns/iter (+/- 123,200)
+test insert_at_random_ll  ... bench:  14,470,666 ns/iter (+/- 39,605)
+test insert_at_random_vec ... bench:   1,896,108 ns/iter (+/- 3,925)
+
+     Running target/release/remove-12ee8f5093c08f36
+
+running 3 tests
+test remove_at_random_ct  ... bench:   3,966,049 ns/iter (+/- 25,852)
+test remove_at_random_ll  ... bench:  11,981,076 ns/iter (+/- 77,152)
+test remove_at_random_vec ... bench:   1,909,054 ns/iter (+/- 5,475)
+</code></pre>
+
+<h3 id='bench-n8192' class='section-header'><a href='#bench-n8192'>Bench: N=8192</a></h3>
+<pre><code class="language-sh">     Running target/release/from_iter-86b0c3c534a106e8
+
+running 3 tests
+test from_iter_ct  ... bench:   1,422,694 ns/iter (+/- 224,526)
+test from_iter_ll  ... bench:   1,190,954 ns/iter (+/- 17,328)
+test from_iter_vec ... bench:      11,487 ns/iter (+/- 52)
+
+     Running target/release/insert-892f694b6341f60d
+
+running 3 tests
+test insert_at_random_ct  ... bench:   7,651,408 ns/iter (+/- 232,136)
+test insert_at_random_ll  ... bench:  67,522,968 ns/iter (+/- 508,089)
+test insert_at_random_vec ... bench:   8,062,135 ns/iter (+/- 46,386)
+
+     Running target/release/remove-12ee8f5093c08f36
+
+running 3 tests
+test remove_at_random_ct  ... bench:   8,972,611 ns/iter (+/- 99,882)
+test remove_at_random_ll  ... bench:  50,513,436 ns/iter (+/- 161,649)
+test remove_at_random_vec ... bench:   8,166,272 ns/iter (+/- 35,268)
+</code></pre>
+
+<h3 id='conclusion' class='section-header'><a href='#conclusion'>Conclusion</a></h3>
+<p>In short, if you want to maintiain a list of type <code>T</code> such that:</p>
+
+<pre><code class="language-sh">[number of elements] * [size of T] &gt; 256 KB
+</code></pre>
+
+<p>then <code>CountTree</code> might be a good choice, otherwise you are better off using
+<code>Vec</code>.</p>
 </div><h2 id='structs' class='section-header'><a href="#structs">Structs</a></h2>
 <table>
                        <tr class=' module-item'>

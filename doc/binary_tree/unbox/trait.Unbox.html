@@ -47,19 +47,23 @@
                    <a id="toggle-all-docs" href="javascript:void(0)" title="collapse all docs">
                        [<span class='inner'>&#x2212;</span>]
                    </a>
-               </span><a id='src-495' class='srclink' href='../../src/binary_tree/src/unbox.rs.html#8-10' title='goto source code'>[src]</a></span></h1>
-<pre class='rust trait'>pub trait Unbox&lt;T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a>&gt; {
-    fn <a href='#tymethod.unbox' class='fnname'>unbox</a>(self) -&gt; T;
+               </span><a id='src-563' class='srclink' href='../../src/binary_tree/src/unbox.rs.html#8-12' title='goto source code'>[src]</a></span></h1>
+<pre class='rust trait'>pub trait Unbox {
+    type <a href='#associatedtype.Target' class='type'>Target</a>;
+    fn <a href='#tymethod.unbox' class='fnname'>unbox</a>(self) -&gt; Self::<a class='trait' href='../../binary_tree/unbox/trait.Unbox.html' title='binary_tree::unbox::Unbox'>Target</a>;
 }</pre><div class='docblock'><p>Trait specifying unboxing capability of a pointer type.</p>
 </div>
+            <h2 id='associated-types'>Associated Types</h2>
+            <div class='methods'>
+        <h3 id='associatedtype.Target' class='method stab '><code>type <a href='#associatedtype.Target' class='type'>Target</a></code></h3></div>
             <h2 id='required-methods'>Required Methods</h2>
             <div class='methods'>
-        <h3 id='tymethod.unbox' class='method stab '><code>fn <a href='#tymethod.unbox' class='fnname'>unbox</a>(self) -&gt; T</code></h3></div>
+        <h3 id='tymethod.unbox' class='method stab '><code>fn <a href='#tymethod.unbox' class='fnname'>unbox</a>(self) -&gt; Self::<a class='trait' href='../../binary_tree/unbox/trait.Unbox.html' title='binary_tree::unbox::Unbox'>Target</a></code></h3></div>
         <h2 id='implementors'>Implementors</h2>
         <ul class='item-list' id='implementors-list'>
-    <li><code>impl&lt;T&gt; <a class='trait' href='../../binary_tree/unbox/trait.Unbox.html' title='binary_tree::unbox::Unbox'>Unbox</a>&lt;T&gt; for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a></span></code></li>
-<li><code>impl&lt;T&gt; <a class='trait' href='../../binary_tree/unbox/trait.Unbox.html' title='binary_tree::unbox::Unbox'>Unbox</a>&lt;T&gt; for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a></span></code></li>
-<li><code>impl&lt;T&gt; <a class='trait' href='../../binary_tree/unbox/trait.Unbox.html' title='binary_tree::unbox::Unbox'>Unbox</a>&lt;T&gt; for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html' title='alloc::arc::Arc'>Arc</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a></span></code></li>
+    <li><code>impl&lt;T&gt; Unbox for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/boxed/struct.Box.html' title='alloc::boxed::Box'>Box</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/marker/trait.Sized.html' title='core::marker::Sized'>Sized</a></span></code></li>
+<li><code>impl&lt;T&gt; Unbox for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/rc/struct.Rc.html' title='alloc::rc::Rc'>Rc</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a></span></code></li>
+<li><code>impl&lt;T&gt; Unbox for <a class='struct' href='https://doc.rust-lang.org/nightly/alloc/arc/struct.Arc.html' title='alloc::arc::Arc'>Arc</a>&lt;T&gt; <span class='where'>where T: <a class='trait' href='https://doc.rust-lang.org/nightly/core/clone/trait.Clone.html' title='core::clone::Clone'>Clone</a></span></code></li>
 </ul><script type="text/javascript" async
                          src="../../implementors/binary_tree/unbox/trait.Unbox.js">
                  </script></section>

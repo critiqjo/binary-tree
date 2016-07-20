@@ -269,11 +269,8 @@ pub trait NodeMut: Node + Sized {
     {
         use WalkAction::*;
 
-        if let Some(mut left) = self.detach_left() {
-            if self.right().is_none() {
-                mem::swap(&mut *left, self);
-                Some(left)
-            } else {
+        match (self.detach_left(), self.detach_right()) {
+            (Some(mut left), right @ Some(_)) => {
                 // fetch the rightmost descendant of left into pio (previous-in-order of self)
                 let mut pio = left.walk_extract(|_| Right,
                                                 |node, ret| {
@@ -291,16 +288,22 @@ pub trait NodeMut: Node + Sized {
                     pio = Some(left);
                 }
                 let mut pio = pio.unwrap();
-                pio.insert_right(self.detach_right());
+                pio.insert_right(right);
                 step_out(&mut pio, Left);
                 mem::swap(&mut *pio, self);
                 Some(pio) // old self
             }
-        } else if let Some(mut right) = self.detach_right() {
-            mem::swap(&mut *right, self);
-            Some(right)
-        } else {
-            None
+            (Some(mut left), None) => {
+                mem::swap(&mut *left, self);
+                Some(left)
+            }
+            (None, Some(mut right)) => {
+                mem::swap(&mut *right, self);
+                Some(right)
+            }
+            (None, None) => {
+                None
+            }
         }
     }
 }
